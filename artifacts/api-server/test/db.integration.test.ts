@@ -37,10 +37,11 @@ describe("PostgreSQL integration", () => {
   });
 
   test("registers a participant and creates its session and state", async () => {
+    const email = `DB-Test-${Date.now()}@Example.COM`;
     const response = await fetch(`${baseUrl}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName: "Тест", lastName: "Базы", age: 30, email: `db-test-${Date.now()}@example.com`, consent: true }),
+      body: JSON.stringify({ firstName: " Тест ", lastName: " Базы ", age: 30, email, consent: true }),
     });
     assert.equal(response.status, 201);
     const { participantId } = await response.json() as { participantId: string };
@@ -50,13 +51,33 @@ describe("PostgreSQL integration", () => {
     const [session] = await db.select().from(simulationSessions).where(eq(simulationSessions.participantId, participantId));
     const [state] = await db.select().from(simulationState).where(eq(simulationState.participantId, participantId));
     assert.equal(participant?.firstName, "Тест");
+    assert.equal(participant?.lastName, "Базы");
+    assert.equal(participant?.age, 30);
+    assert.equal(participant?.email, email.toLowerCase());
+    assert.equal(participant?.consent, true);
+    assert.ok(participant?.registeredAt instanceof Date);
     assert.equal(session?.status, "not-started");
+    assert.equal(session?.completedTasks, 0);
     assert.deepEqual(state?.data, {});
 
     await db.delete(simulationEvents).where(eq(simulationEvents.participantId, participantId));
     await db.delete(simulationState).where(eq(simulationState.participantId, participantId));
     await db.delete(simulationSessions).where(eq(simulationSessions.participantId, participantId));
     await db.delete(participants).where(eq(participants.id, participantId));
+  });
+
+  test("rejects an invalid registration without creating a participant", async () => {
+    const email = `invalid-${Date.now()}@example.com`;
+    const response = await fetch(`${baseUrl}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ firstName: "Тест", lastName: "Ошибки", age: 15, email, consent: true }),
+    });
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { message: "Проверьте данные анкеты и согласие на обработку." });
+    const rows = await db.select().from(participants).where(eq(participants.email, email));
+    assert.equal(rows.length, 0);
   });
 
   test("saves and reads state, and records events through the API", async () => {

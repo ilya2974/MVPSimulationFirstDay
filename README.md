@@ -47,15 +47,15 @@ pnpm install --frozen-lockfile
 Скрипт запускает:
 
 - интерфейс на `http://localhost:3000`;
-- API на `http://localhost:5000`;
-- проверку API на `http://localhost:5000/api/healthz`.
+- API на `http://localhost:5050`;
+- проверку API на `http://localhost:5050/api/healthz`.
 
 Логи сохраняются в файлах:
 
 - `/tmp/mvpsim_front.log` — фронтенд;
 - `/tmp/mvpsim_api.log` — API.
 
-> Перед запуском скрипт принудительно завершает процессы, которые занимают порты 3000 и 5000. Если на этих портах работают другие приложения, остановите их самостоятельно или используйте ручной запуск на других портах.
+> Перед запуском скрипт завершает процессы проекта, которые занимают порты 3000 и 5050. Порт 5000 намеренно не используется: в macOS его часто занимает системный `ControlCenter`.
 
 В конце скрипт выводит PID обоих процессов. Чтобы остановить приложение, выполните указанную им команду:
 
@@ -70,7 +70,7 @@ kill <API_PID> <FRONTEND_PID>
 В первом терминале запустите API:
 
 ```bash
-PORT=5000 DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres" \
+PORT=5050 DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres" \
   pnpm --filter @workspace/api-server run dev
 ```
 
@@ -81,7 +81,7 @@ PORT=3000 BASE_PATH=/ \
   pnpm --filter @workspace/workday-simulation run dev
 ```
 
-Vite перенаправляет запросы с `/api` на `http://localhost:5000`, поэтому при смене порта API нужно также изменить адрес прокси в `artifacts/workday-simulation/vite.config.ts`.
+Vite перенаправляет запросы с `/api` на `http://localhost:5050`. При запуске через `start-project.sh` адрес прокси настраивается автоматически через `API_PROXY_TARGET`.
 
 Основные API-методы хранения:
 
@@ -94,7 +94,10 @@ Vite перенаправляет запросы с `/api` на `http://localhos
 
 | Переменная | Обязательность | Назначение |
 | --- | --- | --- |
-| `PORT` | обязательна | Порт сервиса: 5000 для API, 3000 для интерфейса |
+| `PORT` | обязательна | Порт конкретного сервиса: 5050 для API, 3000 для интерфейса |
+| `API_PORT` | необязательна | Порт API для `start-project.sh`, по умолчанию 5050 |
+| `FRONTEND_PORT` | необязательна | Порт интерфейса для `start-project.sh`, по умолчанию 3000 |
+| `API_PROXY_TARGET` | необязательна | Адрес API для Vite-прокси, по умолчанию `http://localhost:5050` |
 | `BASE_PATH` | обязательна для интерфейса | Базовый URL приложения; для локального запуска — `/` |
 | `DATABASE_URL` | обязательна для API | Строка подключения к PostgreSQL |
 | `LOG_LEVEL` | необязательна | Уровень логирования API, по умолчанию `info` |
@@ -137,6 +140,6 @@ DATABASE_URL="postgres://..." pnpm --filter @workspace/db run push
 
 1. Проверьте, что команды выполняются из корня репозитория.
 2. Повторно установите зависимости командой `pnpm install --frozen-lockfile`.
-3. Убедитесь, что порты 3000 и 5000 свободны: `lsof -i :3000 -i :5000`.
+3. Убедитесь, что порты 3000 и 5050 свободны: `lsof -i :3000 -i :5050`.
 4. Посмотрите сообщения в `/tmp/mvpsim_front.log` и `/tmp/mvpsim_api.log`.
-5. Проверьте API командой `curl http://localhost:5000/api/healthz`. Исправный сервер вернёт `{"status":"ok"}`.
+5. Проверьте API командой `curl http://localhost:5050/api/healthz`. Исправный сервер вернёт `{"status":"ok"}`.
