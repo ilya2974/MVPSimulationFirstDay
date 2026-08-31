@@ -6,6 +6,8 @@
 
 Проект собран как pnpm-монорепозиторий. Основное приложение работает на React и Vite, API — на Express.
 
+Навигация по логике репозитория и правилам размещения новых файлов находится в [`docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md). Дизайн-контракт — в [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md).
+
 ## Требования
 
 - Node.js 24;
