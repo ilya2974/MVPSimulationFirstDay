@@ -15,14 +15,21 @@ type Registration = {
 function isRegistration(value: unknown): value is Registration {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Record<string, unknown>;
+
+  const rawAge = candidate.age;
+  const age = typeof rawAge === "number"
+    ? rawAge
+    : typeof rawAge === "string"
+      ? Number(rawAge)
+      : Number.NaN;
+
   return typeof candidate.firstName === "string"
     && candidate.firstName.trim().length >= 1
     && typeof candidate.lastName === "string"
     && candidate.lastName.trim().length >= 1
-    && typeof candidate.age === "number"
-    && Number.isInteger(candidate.age)
-    && candidate.age >= 16
-    && candidate.age <= 75
+    && Number.isInteger(age)
+    && age >= 16
+    && age <= 75
     && typeof candidate.email === "string"
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate.email)
     && candidate.consent === true;
@@ -36,12 +43,18 @@ router.post("/register", async (req, res) => {
 
   const baseId = process.env["AIRTABLE_BASE_ID"];
   const tableName = process.env["AIRTABLE_TABLE_NAME"];
+  const participantId = randomUUID();
+
   if (!baseId || !tableName) {
-    res.status(503).json({ message: "Airtable не настроен: укажите AIRTABLE_BASE_ID и AIRTABLE_TABLE_NAME." });
+    console.warn("Airtable not configured, using dev-mode registration fallback.");
+    res.status(201).json({
+      participantId,
+      devMode: true,
+      message: "Регистрация сохранена в dev mode без Airtable.",
+    });
     return;
   }
 
-  const participantId = randomUUID();
   const fields = {
     participantId,
     firstName: req.body.firstName.trim(),

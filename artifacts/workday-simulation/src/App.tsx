@@ -208,14 +208,41 @@ function Register() {
     event.preventDefault();
     setSubmitting(true);
     setError('');
+
+    const ageValue = Number(form.age);
+    if (!Number.isInteger(ageValue) || ageValue < 16 || ageValue > 75) {
+      setError('Возраст должен быть целым числом от 16 до 75 лет.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, consent }) });
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, age: ageValue, consent }),
+      });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.participantId) throw new Error('registration_failed');
-      storage.set('workday-profile', { ...form, participantId: result.participantId });
+
+      if (!response.ok) {
+        const reason = typeof result.message === 'string' ? result.message : 'Не удалось завершить регистрацию. Попробуйте еще раз.';
+        if (result.participantId) {
+          storage.set('workday-profile', { ...form, age: String(ageValue), participantId: result.participantId });
+          setLocation('/instruction');
+          return;
+        }
+        throw new Error(reason);
+      }
+
+      if (!result.participantId) {
+        throw new Error('registration_failed');
+      }
+
+      storage.set('workday-profile', { ...form, age: String(ageValue), participantId: result.participantId });
       setLocation('/instruction');
-    } catch {
-      setError('Не удалось завершить регистрацию. Попробуйте еще раз.');
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : 'Не удалось завершить регистрацию. Попробуйте еще раз.';
+      setError(message);
     } finally {
       setSubmitting(false);
     }
