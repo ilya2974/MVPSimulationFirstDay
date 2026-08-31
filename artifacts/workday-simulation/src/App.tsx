@@ -42,9 +42,12 @@ import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
 
-type Profile = { lastName: string; firstName: string; age: string; email: string };
-type AppId = 'mail' | 'word' | 'ai' | 'messenger' | 'task';
+type Profile = { participantId?: string; lastName: string; firstName: string; age: string; email: string };
+type AppId = 'mail' | 'word' | 'ai' | 'messenger';
 type WindowState = { visible: boolean; minimized: boolean; maximized: boolean; z: number };
+type MailFolder = 'inbox' | 'archive' | 'trash' | 'sent';
+type MailRecord = { id: string; sender: string; email: string; subject: string; preview: string; date: string; unread: boolean; icon: string; read: boolean; flagged: boolean; folder: MailFolder };
+type TaskStatus = 'active' | 'completed' | 'expired' | 'not-started';
 
 const storage = {
   get<T>(key: string, fallback: T): T {
@@ -65,7 +68,6 @@ const appLabels: Record<AppId, string> = {
   word: 'Word',
   ai: 'AI-помощник',
   messenger: 'Мессенджер',
-  task: 'Задание 1',
 };
 
 const mailItems = [
@@ -81,18 +83,47 @@ const mailItems = [
   { id: 'welcome', sender: 'Changellenge', email: 'hello@changellenge.ru', subject: 'Ваш рабочий аккаунт готов', preview: 'Данные для первого входа и полезные ссылки.', date: 'Чт', unread: false, icon: 'CH' },
 ];
 
+function getInitialMailRecords(): MailRecord[] {
+  const readIds = storage.get<string[]>('workday-mail-read', []);
+  return mailItems.map((mail) => ({
+    ...mail,
+    read: readIds.includes(mail.id) || !mail.unread,
+    flagged: mail.id === 'task',
+    folder: 'inbox',
+  }));
+}
+
 const taskActions = [
-  'Проверить входящие письма и выделить важное',
-  'Изучить результаты опроса новых сотрудников',
-  'Сформулировать 3 наблюдения о первом рабочем дне',
-  'Подготовить структуру концепции AI-помощника',
-  'Сверить доступные данные и ограничения',
-  'Обсудить первые мысли с Мариной в мессенджере',
-  'Сохранить итоговый документ в рабочей папке',
+  'Прочитать все сообщения от коллег и ответить.',
+  'Проверить, какая информация доступна для анализа, ее полноту и ограничения.',
+  'Написать промт для ИИ, чтобы он придумал концепцию ИИ-помощника.',
+  'Изучить существующие на рынке ИИ-помощники для адаптации сотрудников.',
+  'Проанализировать письма и определить потребности разных целевых аудиторий с помощью ИИ.',
+  'Подготовить обоснование для руководителя выбора целевой аудитории и ее потребностей.',
+  'Построить карту пути новичка от получения оффера до окончания испытательного срока.',
+  'Определить ключевой функционал.',
+  'Описать преимущества предложения.',
+  'Описать риски решения.',
+  'Проверить ограничения и при необходимости внести изменения в предложение.',
+  'Отправить предложение руководителю.',
+  'Составить портрет новичка для каждой целевой аудитории.',
+  'Изучить задачу от руководителя и определить, какой результат нужно подготовить к встрече.',
+  'Написать руководителю промежуточный статус.',
+  'Запросить у коллег недостающую для анализа и принятия решения информацию.',
+  'Уточнить у руководителя его ожидания от ИИ-помощника.',
+  'Сформулировать цели проекта ИИ-помощника для адаптации и критерии оценки эффективности проекта.',
+  'Изучить правила работы с корпоративным ИИ.',
+  'Прочитать документ с информацией о потребностях и проблемах целевых аудиторий, выделить потребности, повторяющиеся запросы, противоречия и недостающую информацию.',
 ];
 
 function getProfile() {
   return storage.get<Profile>('workday-profile', { lastName: '', firstName: '', age: '', email: '' });
+}
+
+function formatTimer(seconds: number) {
+  const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const remainder = (seconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remainder}`;
 }
 
 function AppMark({ small = false }: { small?: boolean }) {
@@ -170,9 +201,26 @@ function Register() {
   const existing = getProfile();
   const [form, setForm] = useState<Profile>(existing);
   const [consent, setConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const update = (key: keyof Profile) => (event: React.ChangeEvent<HTMLInputElement>) => setForm((current) => ({ ...current, [key]: event.target.value }));
-  const submit = (event: FormEvent) => { event.preventDefault(); storage.set('workday-profile', form); setLocation('/instruction'); };
-  return <AuthFrame step={1}><div className="eyebrow mb-3">ваш профиль</div><h2 className="serif text-4xl text-[#294447]">Короткая анкета</h2><p className="mt-3 max-w-[430px] text-sm leading-6 text-[#6e7b75]">Имя появится внутри симуляции — в письмах, чате и рабочем профиле.</p><form onSubmit={submit} className="mt-8 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Фамилия</span><input data-testid="input-last-name" required value={form.lastName} onChange={update('lastName')} className="form-input" placeholder="Орлова" /></label><label><span className="field-label">Имя</span><input data-testid="input-first-name" required value={form.firstName} onChange={update('firstName')} className="form-input" placeholder="Мария" /></label></div><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Возраст</span><input data-testid="input-age" required type="number" min="16" max="75" value={form.age} onChange={update('age')} className="form-input" placeholder="24" /></label><label><span className="field-label">Адрес электронной почты</span><input data-testid="input-email" required type="email" value={form.email} onChange={update('email')} className="form-input" placeholder="maria@example.ru" /></label></div><label className="flex cursor-pointer gap-3 pt-1 text-xs leading-5 text-[#718078]"><input data-testid="checkbox-consent" type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#39746a]" required /><span>Согласна на использование этих данных для прохождения симуляции. Мы ничего не отправляем во внешние сервисы.</span></label><div className="flex items-center justify-between gap-4 pt-3"><button data-testid="button-back-landing" type="button" onClick={() => setLocation('/')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-submit-registration" type="submit" className="button-primary">Продолжить <ArrowRight size={15} /></button></div></form></AuthFrame>;
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
+    try {
+      const response = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, consent }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.participantId) throw new Error('registration_failed');
+      storage.set('workday-profile', { ...form, participantId: result.participantId });
+      setLocation('/instruction');
+    } catch {
+      setError('Не удалось завершить регистрацию. Попробуйте еще раз.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  return <AuthFrame step={1}><div className="eyebrow mb-3">ваш профиль</div><h2 className="serif text-4xl text-[#294447]">Короткая анкета</h2><p className="mt-3 max-w-[430px] text-sm leading-6 text-[#6e7b75]">Имя появится внутри симуляции — в письмах, чате и рабочем профиле.</p><form onSubmit={submit} className="mt-8 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Фамилия</span><input data-testid="input-last-name" required value={form.lastName} onChange={update('lastName')} className="form-input" placeholder="Орлова" /></label><label><span className="field-label">Имя</span><input data-testid="input-first-name" required value={form.firstName} onChange={update('firstName')} className="form-input" placeholder="Мария" /></label></div><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Возраст</span><input data-testid="input-age" required type="number" min="16" max="75" value={form.age} onChange={update('age')} className="form-input" placeholder="24" /></label><label><span className="field-label">Адрес электронной почты</span><input data-testid="input-email" required type="email" value={form.email} onChange={update('email')} className="form-input" placeholder="maria@example.ru" /></label></div><label className="flex cursor-pointer gap-3 pt-1 text-xs leading-5 text-[#718078]"><input data-testid="checkbox-consent" type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#39746a]" required /><span>Согласна на использование этих данных для прохождения симуляции и сохранение анкеты в рабочей базе.</span></label>{error && <div data-testid="status-registration-error" className="rounded-md border border-[#e2b7ac] bg-[#fff1ed] px-3 py-2 text-xs text-[#a2544b]">{error}</div>}<div className="flex items-center justify-between gap-4 pt-3"><button data-testid="button-back-landing" type="button" onClick={() => setLocation('/')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-submit-registration" type="submit" disabled={submitting} className="button-primary disabled:cursor-wait disabled:opacity-60">{submitting ? 'Регистрация...' : 'Зарегистрироваться'} {!submitting && <ArrowRight size={15} />}</button></div></form></AuthFrame>;
 }
 
 function Instruction() {
@@ -188,29 +236,117 @@ function Demo() {
 }
 
 function WindowFrame({ id, title, icon, state, active, onFocus, onClose, onMinimize, onMaximize, children }: { id: AppId; title: string; icon: ReactNode; state: WindowState; active: boolean; onFocus: () => void; onClose: () => void; onMinimize: () => void; onMaximize: () => void; children: ReactNode }) {
-  const positions: Record<AppId, React.CSSProperties> = { mail: { left: '13%', top: '11%', width: '74%', height: '71%' }, word: { left: '18%', top: '9%', width: '64%', height: '76%' }, ai: { left: '27%', top: '13%', width: '47%', height: '65%' }, messenger: { left: '30%', top: '16%', width: '43%', height: '59%' }, task: { left: '23%', top: '12%', width: '54%', height: '69%' } };
+  const positions: Record<AppId, React.CSSProperties> = { mail: { left: '9%', top: '8%', width: '82%', height: '78%' }, word: { left: '18%', top: '9%', width: '64%', height: '76%' }, ai: { left: '27%', top: '13%', width: '47%', height: '65%' }, messenger: { left: '30%', top: '16%', width: '43%', height: '59%' } };
   return <section data-testid={`window-${id}`} className={`app-window ${state.maximized ? 'is-max' : ''}`} style={{ ...positions[id], zIndex: state.z, display: state.visible && !state.minimized ? 'flex' : 'none' }} onMouseDown={onFocus}><header className={`app-titlebar ${active ? 'active' : ''}`} onDoubleClick={onMaximize}><div className="app-title">{icon}<span>{title}</span></div><div className="window-controls"><button data-testid={`button-minimize-${id}`} className="window-control" onClick={onMinimize} aria-label="Свернуть"><Minus size={14} /></button><button data-testid={`button-maximize-${id}`} className="window-control" onClick={onMaximize} aria-label="Развернуть"><Square size={12} /></button><button data-testid={`button-close-${id}`} className="window-control close" onClick={onClose} aria-label="Закрыть"><X size={14} /></button></div></header><div className="app-content">{children}</div></section>;
 }
 
-function MailApp({ selectedId, setSelectedId, notify }: { selectedId: string; setSelectedId: (id: string) => void; notify: (message: string) => void }) {
+function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, taskStatus, onSubmitTask, onTaskExpired }: { selectedId: string; setSelectedId: (id: string) => void; notify: (message: string) => void; onTaskOpened: () => void; taskStatus: TaskStatus; onSubmitTask: () => void; onTaskExpired: () => void }) {
   const [folder, setFolder] = useState('Входящие');
-  const [readIds, setReadIds] = useState<string[]>(() => storage.get('workday-mail-read', []));
-  const selected = mailItems.find((mail) => mail.id === selectedId) || mailItems[0];
+  const [records, setRecords] = useState<MailRecord[]>(() => storage.get<MailRecord[]>('workday-mail-records', getInitialMailRecords()));
+  const [drafts, setDrafts] = useState<MailRecord[]>(() => storage.get<MailRecord[]>('workday-mail-drafts', []));
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [draft, setDraft] = useState({ id: '', to: '', subject: '', body: '' });
+  useEffect(() => { storage.set('workday-mail-records', records); }, [records]);
+  useEffect(() => { storage.set('workday-mail-drafts', drafts); }, [drafts]);
+  const selected = records.find((mail) => mail.id === selectedId) || records[0] || getInitialMailRecords()[0];
+  const unreadCount = records.filter((mail) => mail.folder === 'inbox' && !mail.read).length;
+  const folderConfig = [
+    ['Входящие', Inbox, unreadCount],
+    ['Помеченные', Star, ''],
+    ['Черновики', PenLine, drafts.length],
+    ['Отправленные', Send, ''],
+    ['Архив', Archive, ''],
+    ['Корзина', Trash2, ''],
+  ] as const;
   const openMail = (id: string) => {
     setSelectedId(id);
-    const mail = mailItems.find((item) => item.id === id);
-    if (mail?.unread && !readIds.includes(id)) {
-      const next = [...readIds, id];
-      setReadIds(next);
-      storage.set('workday-mail-read', next);
+    setComposeOpen(false);
+    const mail = records.find((item) => item.id === id);
+    if (mail && !mail.read) {
+      setRecords((current) => current.map((item) => item.id === id ? { ...item, read: true, unread: false } : item));
+      storage.set('workday-mail-read', [...records.filter((item) => item.read || item.id === id).map((item) => item.id)]);
     }
+    if (mail?.id === 'task') onTaskOpened();
   };
-  return <div className="mail-layout"><aside className="mail-sidebar"><button data-testid="button-compose-mail" onClick={() => notify('Создание письма пока не входит в сценарий')} className="mb-4 flex w-full items-center justify-center gap-1.5 rounded-md border border-[#b7cfc2] bg-[#dbeae1] px-2 py-2 text-[10px] font-semibold text-[#2d655d]"><Plus size={13} /> <span className="hidden sm:inline">Новое</span></button>{[['Входящие', Inbox, '3'], ['Помеченные', Star, ''], ['Черновики', PenLine, ''], ['Архив', Archive, ''], ['Корзина', Trash2, '']].map(([label, Icon, count]) => <button key={label as string} data-testid={`button-folder-${label}`} onClick={() => setFolder(label as string)} className={`mail-folder ${folder === label ? 'selected' : ''}`}><Icon size={14} /><span>{label as string}</span>{count && <small className="ml-auto hidden font-mono text-[9px] sm:inline">{count as string}</small>}</button>)}</aside><div className="mail-list"><div className="mail-list-head"><span>{folder}</span><Search size={14} className="text-[#81918a]" /></div>{mailItems.map((mail) => <button key={mail.id} data-testid={`button-email-${mail.id}`} onClick={() => openMail(mail.id)} className={`mail-row ${mail.unread && !readIds.includes(mail.id) ? 'unread' : ''} ${selected.id === mail.id ? 'selected' : ''}`}><div className="mail-sender"><span>{mail.sender}</span><span className="mail-date">{mail.date}</span></div><div className="mail-subject">{mail.subject}</div><div className="mail-preview">{mail.preview}</div></button>)}</div><EmailReading email={selected} notify={notify} /></div>;
+  const visibleRecords = folder === 'Входящие'
+    ? records.filter((mail) => mail.folder === 'inbox')
+    : folder === 'Помеченные'
+      ? records.filter((mail) => mail.flagged)
+      : folder === 'Отправленные'
+        ? records.filter((mail) => mail.folder === 'sent')
+        : folder === 'Архив'
+          ? records.filter((mail) => mail.folder === 'archive')
+          : folder === 'Корзина'
+            ? records.filter((mail) => mail.folder === 'trash')
+            : [];
+  const saveDraft = () => {
+    if (!draft.to.trim() && !draft.subject.trim() && !draft.body.trim()) { setComposeOpen(false); return; }
+    const saved: MailRecord = { id: draft.id || `draft-${Date.now()}`, sender: 'Вы', email: draft.to, subject: draft.subject || '(без темы)', preview: draft.body.slice(0, 90), date: 'сейчас', unread: false, read: true, flagged: false, folder: 'sent', icon: 'ВЫ' };
+    setDrafts((current) => current.some((item) => item.id === saved.id) ? current.map((item) => item.id === saved.id ? saved : item) : [...current, saved]);
+    setComposeOpen(false);
+    notify('Черновик сохранен');
+  };
+  const sendDraft = () => {
+    if (!draft.to.trim() || !draft.subject.trim() || !draft.body.trim()) { notify('Заполните получателя, тему и текст'); return; }
+    const sent: MailRecord = { id: draft.id || `sent-${Date.now()}`, sender: 'Вы', email: draft.to, subject: draft.subject, preview: draft.body.slice(0, 90), date: 'сейчас', unread: false, read: true, flagged: false, folder: 'sent', icon: 'ВЫ' };
+    setRecords((current) => [...current.filter((item) => item.id !== sent.id), sent]);
+    setDrafts((current) => current.filter((item) => item.id !== draft.id));
+    setComposeOpen(false);
+    setFolder('Отправленные');
+    setSelectedId(sent.id);
+    notify('Письмо отправлено');
+  };
+  const openDraft = (item: MailRecord) => { setDraft({ id: item.id, to: item.email, subject: item.subject === '(без темы)' ? '' : item.subject, body: item.preview }); setComposeOpen(true); };
+  const moveSelected = (folderName: MailFolder) => { setRecords((current) => current.map((item) => item.id === selected.id ? { ...item, folder: folderName } : item)); setFolder(folderName === 'trash' ? 'Корзина' : folderName === 'archive' ? 'Архив' : 'Входящие'); notify(folderName === 'trash' ? 'Письмо перемещено в корзину' : folderName === 'archive' ? 'Письмо архивировано' : 'Письмо возвращено во входящие'); };
+  return <div className="mail-layout">
+    <aside className="mail-sidebar">
+      <button data-testid="button-compose-mail" onClick={() => { setDraft({ id: '', to: '', subject: '', body: '' }); setComposeOpen(true); }} className="mb-4 flex w-full items-center justify-center gap-1.5 rounded-md border border-[#b7cfc2] bg-[#dbeae1] px-2 py-2 text-[10px] font-semibold text-[#2d655d]"><Plus size={13} /> <span className="hidden sm:inline">Написать письмо</span></button>
+      {folderConfig.map(([label, Icon, count]) => <button key={label} data-testid={`button-folder-${label}`} onClick={() => { setFolder(label); setComposeOpen(false); }} className={`mail-folder ${folder === label ? 'selected' : ''}`}><Icon size={14} /><span>{label}</span>{count !== '' && Number(count) > 0 && <small className="ml-auto font-mono text-[9px]">{count}</small>}</button>)}
+    </aside>
+    <div className="mail-list"><div className="mail-list-head"><span>{folder}</span><Search size={14} className="text-[#81918a]" /></div>
+      {folder === 'Черновики' ? drafts.map((item) => <button key={item.id} data-testid={`button-draft-${item.id}`} onClick={() => openDraft(item)} className="mail-row"><div className="mail-sender"><span>{item.email || 'Без получателя'}</span><span className="mail-date">{item.date}</span></div><div className="mail-subject">{item.subject}</div><div className="mail-preview">{item.preview}</div></button>) : visibleRecords.map((mail) => <button key={mail.id} data-testid={`button-email-${mail.id}`} onClick={() => openMail(mail.id)} className={`mail-row ${!mail.read ? 'unread' : ''} ${selected.id === mail.id ? 'selected' : ''}`}><div className="mail-sender"><span>{mail.sender}</span><span className="mail-date">{mail.date}</span></div><div className="mail-subject">{mail.flagged && <Star size={11} className="mr-1 inline fill-[#c6a16b] text-[#c6a16b]" />}{mail.subject}</div><div className="mail-preview">{mail.preview}</div></button>)}
+      {folder !== 'Черновики' && !visibleRecords.length && <div className="p-5 text-xs text-[#82908a]">В этой папке пока нет писем.</div>}
+    </div>
+    {composeOpen ? <ComposeMail draft={draft} setDraft={setDraft} onSend={sendDraft} onSave={saveDraft} onCancel={() => setComposeOpen(false)} /> : <EmailReading email={selected} folder={selected.folder} notify={notify} onToggleFlag={() => setRecords((current) => current.map((item) => item.id === selected.id ? { ...item, flagged: !item.flagged } : item))} onMove={moveSelected} onTaskOpened={onTaskOpened} taskStatus={taskStatus} onSubmitTask={onSubmitTask} onTaskExpired={onTaskExpired} />}
+  </div>;
 }
 
-function EmailReading({ email, notify }: { email: typeof mailItems[number]; notify: (message: string) => void }) {
-  const body = email.id === 'task' ? <><p>Привет!</p><p>Рада видеть тебя в команде. Сегодня предлагаю начать с небольшой задачи: разобраться, как новые сотрудники проходят свой первый рабочий день, и наметить идеи для AI-помощника.</p><p>Посмотри входящие, материалы от People team и доступные данные. Затем зафиксируй свои наблюдения в документе Word и напиши мне пару мыслей в мессенджере.</p><h3>Что нужно сделать</h3><p>Пожалуйста, открой окно <strong>«Задание 1»</strong> в нижней панели. Там будет порядок действий и форма для ответа. Не стремись угадать «правильный» путь — нам важно увидеть твою логику.</p><p>Если что-то непонятно, пиши. Удачного старта!</p><p>Марина</p></> : email.id === 'survey' ? <><p>Коллеги, собрали результаты короткого опроса новых сотрудников за весенний поток.</p><p>Самые частые сложности в первые дни — найти нужную информацию (42%), понять, к кому обратиться с вопросом (31%) и разобраться с внутренними инструментами (19%). В свободных ответах чаще всего звучала просьба о едином «проводнике» по первым задачам.</p><div className="attachment-card"><FileText size={22} /><div><strong>new_employee_survey.pdf</strong><span>PDF · 2,4 МБ · результаты опроса</span></div><Download size={15} className="ml-auto text-[#668078]" /></div><p>Будем рады, если эти наблюдения пригодятся в твоей концепции.</p></> : email.id === 'data' ? <><p>Олег, привет. Оставляю в одном месте то, что доступно для работы над сегодняшней задачей.</p><h3>Источники</h3><p>• Опрос новых сотрудников — в письме от People team.<br />• Гайд по первым 30 дням — папка «Онбординг».<br />• Анонимизированные обращения в поддержку — таблица за март.</p><p>Не используй персональные данные сотрудников и не выноси внутренние материалы за пределы рабочего пространства.</p></> : email.id === 'security' ? <><p>Несколько важных напоминаний перед началом работы.</p><h3>Рабочие данные</h3><p>Используйте только корпоративное пространство. Не вставляйте имена, адреса и другие персональные данные в публичные AI-сервисы. Перед отправкой файла проверьте права доступа.</p><p>Если сомневаетесь — задайте вопрос IT Security или Марине. Безопасность здесь важнее скорости.</p></> : <><p>Привет!</p><p>{email.preview} Если появятся вопросы, напиши в соответствующий канал — команда на связи.</p><p>Хорошего рабочего дня,<br />Команда Changellenge &gt;&gt;</p></>;
-  return <article className="reading-pane"><div className="eyebrow !text-[9px]">ВХОДЯЩИЕ / {email.id === 'task' ? 'ПРИОРИТЕТ' : 'СООБЩЕНИЕ'}</div><h2 className="mt-3">{email.subject}</h2><div className="reading-meta flex items-center gap-2"><span className="person-avatar">{email.icon}</span><span><strong className="text-[#4f615e]">{email.sender}</strong> &lt;{email.email}&gt; · сегодня, {email.date}</span></div><div className="reading-body mt-7">{body}</div><div className="mt-8 flex gap-2"><button data-testid="button-reply-email" onClick={() => notify('Ответ можно будет отправить в следующей версии')} className="toolbar-button border border-[#d1ddd4] bg-[#eef4ed]"><ArrowLeft size={13} /> Ответить</button><button data-testid="button-forward-email" onClick={() => notify('Пересылка будет доступна в следующей версии')} className="toolbar-button border border-[#d1ddd4]"><ArrowRight size={13} /> Переслать</button></div></article>;
+function ComposeMail({ draft, setDraft, onSend, onSave, onCancel }: { draft: { id: string; to: string; subject: string; body: string }; setDraft: (value: { id: string; to: string; subject: string; body: string }) => void; onSend: () => void; onSave: () => void; onCancel: () => void }) {
+  return <form className="reading-pane compose-pane" onSubmit={(event) => { event.preventDefault(); onSend(); }}><div className="eyebrow !text-[9px]">НОВОЕ ПИСЬМО</div><h2 className="mt-3">Написать письмо</h2><label className="field-label mt-6">Кому<input data-testid="input-mail-to" required value={draft.to} onChange={(event) => setDraft({ ...draft, to: event.target.value })} className="form-input mt-1" /></label><label className="field-label mt-3">Тема<input data-testid="input-mail-subject" required value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} className="form-input mt-1" /></label><label className="field-label mt-3">Текст<textarea data-testid="textarea-mail-body" required value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} className="form-input mt-1 min-h-[180px]" /></label><div className="mt-5 flex gap-2"><button data-testid="button-send-mail" className="toolbar-button border border-[#b7cfc2] bg-[#dbeae1]" type="submit"><Send size={13} /> Отправить</button><button data-testid="button-save-draft" type="button" onClick={onSave} className="toolbar-button border border-[#d1ddd4]">Сохранить черновик</button><button data-testid="button-cancel-mail" type="button" onClick={onCancel} className="toolbar-button border border-[#d1ddd4]">Отмена</button></div></form>;
+}
+
+function EmailReading({ email, folder, notify, onToggleFlag, onMove, onTaskOpened, taskStatus, onSubmitTask, onTaskExpired }: { email: MailRecord; folder: MailFolder; notify: (message: string) => void; onToggleFlag: () => void; onMove: (folder: MailFolder) => void; onTaskOpened: () => void; taskStatus: TaskStatus; onSubmitTask: () => void; onTaskExpired: () => void }) {
+  const body = email.id === 'task' ? <><p>Доброе утро!</p><p>Рада, что ты пришел к нам в команду. Присоединяйся к первому проекту.</p><p>Сегодня через час жду тебя на встрече проектной команды, будем обсуждать создание ИИ-помощника для новых сотрудников компании.</p><p>Твоя задача — подготовить и представить свою концепцию помощника, которая поможет новым работникам быстрее адаптироваться и эффективнее решать рабочие задачи.</p><p>Перед встречей продумай свое предложение и подготовь краткое описание концепции. В нем обязательно отрази целевую аудиторию, проблемы и потребности пользователей, ключевые функции, необходимые данные и источники информации, ограничения и риски.</p><p>Через 30 минут напиши, как продвигается работа: все ли получается, есть ли вопросы или сложности. Через час жду тебя на встрече. Свое предложение пришли мне до начала обсуждения.</p><p>С уважением,<br />Марина Орлова<br />Руководитель проектной команды</p></> : email.id === 'survey' ? <><p>Коллеги, собрали результаты короткого опроса новых сотрудников за весенний поток.</p><p>Самые частые сложности в первые дни — найти нужную информацию (42%), понять, к кому обратиться с вопросом (31%) и разобраться с внутренними инструментами (19%). В свободных ответах чаще всего звучала просьба о едином «проводнике» по первым задачам.</p><div className="attachment-card"><FileText size={22} /><div><strong>new_employee_survey.pdf</strong><span>PDF · 2,4 МБ · результаты опроса</span></div><Download size={15} className="ml-auto text-[#668078]" /></div><p>Будем рады, если эти наблюдения пригодятся в твоей концепции.</p></> : email.id === 'data' ? <><p>Олег, привет. Оставляю в одном месте то, что доступно для работы над сегодняшней задачей.</p><h3>Источники</h3><p>• Опрос новых сотрудников — в письме от People team.<br />• Гайд по первым 30 дням — папка «Онбординг».<br />• Анонимизированные обращения в поддержку — таблица за март.</p><p>Не используй персональные данные сотрудников и не выноси внутренние материалы за пределы рабочего пространства.</p></> : email.id === 'security' ? <><p>Несколько важных напоминаний перед началом работы.</p><h3>Рабочие данные</h3><p>Используйте только корпоративное пространство. Не вставляйте имена, адреса и другие персональные данные в публичные AI-сервисы. Перед отправкой файла проверьте права доступа.</p><p>Если сомневаетесь — задайте вопрос IT Security или Марине. Безопасность здесь важнее скорости.</p></> : <><p>Привет!</p><p>{email.preview} Если появятся вопросы, напиши в соответствующий канал — команда на связи.</p><p>Хорошего рабочего дня,<br />Команда Changellenge &gt;&gt;</p></>;
+  return <article className="reading-pane"><div className="eyebrow !text-[9px]">{folder === 'inbox' ? 'ВХОДЯЩИЕ' : folder.toUpperCase()} / {email.id === 'task' ? 'ПРИОРИТЕТ' : 'СООБЩЕНИЕ'}</div><div className="flex items-start justify-between gap-3"><h2 className="mt-3">{email.subject}</h2><button data-testid="button-flag-email" onClick={onToggleFlag} className={`toolbar-button mt-2 ${email.flagged ? 'text-[#b18445]' : ''}`} aria-label="Пометить письмо"><Star size={14} className={email.flagged ? 'fill-current' : ''} /></button></div><div className="reading-meta flex items-center gap-2"><span className="person-avatar">{email.icon}</span><span><strong className="text-[#4f615e]">{email.sender}</strong> &lt;{email.email}&gt; · сегодня, {email.date}</span></div><div className="reading-body mt-7">{body}</div>{email.id === 'task' && <TaskForm status={taskStatus} onTaskOpened={onTaskOpened} onSubmitTask={onSubmitTask} onTaskExpired={onTaskExpired} />}{email.folder === 'sent' ? null : <div className="mt-8 flex flex-wrap gap-2">{folder === 'trash' ? <button data-testid="button-restore-email" onClick={() => onMove('inbox')} className="toolbar-button border border-[#d1ddd4]"><RotateCcw size={13} /> Восстановить</button> : <><button data-testid="button-archive-email" onClick={() => onMove('archive')} className="toolbar-button border border-[#d1ddd4]"><Archive size={13} /> Архивировать</button><button data-testid="button-delete-email" onClick={() => onMove('trash')} className="toolbar-button border border-[#d1ddd4] text-[#a26459]"><Trash2 size={13} /> Удалить</button></>}</div>}</article>;
+}
+
+function TaskForm({ status, onTaskOpened, onSubmitTask, onTaskExpired }: { status: TaskStatus; onTaskOpened: () => void; onSubmitTask: () => void; onTaskExpired: () => void }) {
+  const [checks, setChecks] = useState<Record<string, boolean>>(() => {
+    const selected = storage.get<string[]>('task1SelectedActions', []);
+    return selected.length ? Object.fromEntries(selected.map((action) => [action, true])) : storage.get('workday-task-checks', {});
+  });
+  const [orders, setOrders] = useState<Record<string, string>>(() => storage.get('task1Order', storage.get('workday-task-orders', {})));
+  const [minutes, setMinutes] = useState<Record<string, string>>(() => storage.get('task1EstimatedTimes', storage.get('workday-task-minutes', {})));
+  useEffect(() => { if (status === 'expired') onTaskExpired(); }, [status, onTaskExpired]);
+  const updateCheck = (action: string, checked: boolean) => {
+    const next = { ...checks, [action]: checked };
+    setChecks(next);
+    storage.set('task1SelectedActions', Object.keys(next).filter((key) => next[key]));
+    storage.set('workday-task-checks', next);
+  };
+  const updateOrder = (action: string, value: string) => { const next = { ...orders, [action]: value }; setOrders(next); storage.set('task1Order', next); storage.set('workday-task-orders', next); };
+  const updateMinutes = (action: string, value: string) => { const next = { ...minutes, [action]: value }; setMinutes(next); storage.set('task1EstimatedTimes', next); storage.set('workday-task-minutes', next); };
+  const locked = status !== 'active';
+  return <section className="task-inline mt-8 border-t border-[#d8e1d8] pt-6">
+    {status === 'completed' && <div className="task-complete-banner"><CheckCircle2 size={16} /> <span><strong>Задание выполнено</strong><small>Ваш ответ отправлен руководителю.</small></span></div>}
+    {status === 'expired' && <div className="task-expired-banner"><Info size={16} /> Время на выполнение задания закончилось. Ваш текущий ответ сохранен автоматически.</div>}
+    {status === 'not-started' && <div className="task-expired-banner">Откройте письмо, чтобы начать отсчет времени на задание.</div>}
+    <div className="task-overline mt-4">ЗАДАНИЕ 1</div>
+    <h3 className="mt-2">План работы на 1 час</h3>
+    <p className="mt-2 max-w-[700px] text-[11px] leading-5 text-[#61726b]">За ближайшие 7 минут составьте план работы на 1 час по подготовке концепции ИИ-помощника для новичков. Выберите действия, расположите их в нужной последовательности, оцените время и отправьте ответ руководителю.</p>
+    <div className="task-table-wrap"><table className="task-table"><thead><tr><th>Действие</th><th>Выбрать</th><th>Последовательность</th><th>Время, мин</th></tr></thead><tbody>{taskActions.map((action, index) => <tr key={action}><td>{action}</td><td><input data-testid={`checkbox-task-action-${index}`} type="checkbox" checked={Boolean(checks[action])} disabled={locked} onChange={(event) => updateCheck(action, event.target.checked)} aria-label={`Выбрать: ${action}`} /></td><td><input data-testid={`input-task-order-${index}`} type="number" min="1" max="20" value={orders[action] || ''} disabled={locked || !checks[action]} onChange={(event) => updateOrder(action, event.target.value)} aria-label={`Последовательность: ${action}`} /></td><td><input data-testid={`input-task-minutes-${index}`} type="number" min="1" max="60" value={minutes[action] || ''} disabled={locked || !checks[action]} onChange={(event) => updateMinutes(action, event.target.value)} aria-label={`Время: ${action}`} /></td></tr>)}</tbody></table></div>
+    {!locked && <button data-testid="button-submit-task" type="button" onClick={() => { if (window.confirm('Отправить ответ? После отправки изменить его будет нельзя.')) { storage.set('task1SelectedActions', Object.keys(checks).filter((key) => checks[key])); storage.set('task1Order', orders); storage.set('task1EstimatedTimes', minutes); onSubmitTask(); } }} className="task-submit mt-4">Отправить ответ <Send size={13} className="ml-1 inline" /></button>}
+  </section>;
 }
 
 function WordApp({ notify }: { notify: (message: string) => void }) {
@@ -244,17 +380,6 @@ function MessengerApp() {
   return <div className="messenger-layout"><aside className="chat-list"><div className="px-2 pb-3 pt-2 font-mono text-[9px] uppercase tracking-widest text-[#89968f]">Чаты</div>{people.map((person) => <button key={person.id} data-testid={`button-chat-${person.id}`} onClick={() => setActiveChat(person.id)} className={`chat-person ${activeChat === person.id ? 'selected' : ''}`}><span className="person-avatar">{person.initials}</span><span className="min-w-0"><strong className="block truncate text-[11px]">{person.name}</strong><small className="block text-[9px] text-[#87958d]">{person.role}</small></span></button>)}</aside><div className="messenger-thread"><div className="messenger-head flex items-center justify-between"><span>{current.name}</span><MoreHorizontal size={15} className="text-[#85918b]" /></div><div className="messenger-messages">{messages.filter((message) => message.chat === activeChat).map((message) => <div data-testid={`message-chat-${message.id}`} key={message.id} className={`message-line ${message.sender === 'me' ? 'self' : ''}`}>{message.text}</div>)}</div><div className="chat-input"><input data-testid="input-messenger-message" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }} placeholder={`Написать ${current.name.split(' ')[0]}...`} /><button data-testid="button-send-messenger" onClick={send} className="send-button" aria-label="Отправить"><Send size={14} /></button></div></div></div>;
 }
 
-function TaskApp({ notify }: { notify: (message: string) => void }) {
-  const initialChecks = storage.get<Record<string, boolean>>('workday-task-checks', {});
-  const initialMinutes = storage.get<Record<string, string>>('workday-task-minutes', {});
-  const [checks, setChecks] = useState<Record<string, boolean>>(initialChecks);
-  const [minutes, setMinutes] = useState<Record<string, string>>(initialMinutes);
-  const [orders, setOrders] = useState<Record<string, string>>(() => storage.get('workday-task-orders', {}));
-  const [submitted, setSubmitted] = useState(() => storage.get('workday-task-submitted', false));
-  const submit = (event: FormEvent) => { event.preventDefault(); storage.set('workday-task-checks', checks); storage.set('workday-task-minutes', minutes); storage.set('workday-task-orders', orders); storage.set('workday-task-submitted', true); setSubmitted(true); notify('Ответ сохранен'); };
-  return <form onSubmit={submit} className="task-panel"><div className="task-overline">Задание 1 / первая задача</div><h2 className="mt-2">План первого рабочего дня</h2><p className="max-w-[680px]">Марина попросила разобраться с вводными и подготовить основу для концепции AI-помощника. Отметьте действия, которые вы выполните, расставьте порядок и оцените время.</p><div className="mt-5 flex items-center gap-2 rounded-md border border-[#d4dfd5] bg-[#eef4ed] px-3 py-2 text-[11px] text-[#567069]"><Info size={14} className="text-[#39746a]" /> Время — ваша оценка. Сумма не обязана совпадать с таймером симуляции.</div><table className="task-table"><thead><tr><th>Сделать</th><th>Порядок</th><th>Минуты</th></tr></thead><tbody>{taskActions.map((action, index) => <tr key={action}><td><label className="flex cursor-pointer items-center gap-2"><input data-testid={`checkbox-task-action-${index}`} type="checkbox" checked={Boolean(checks[action])} onChange={(event) => setChecks((value) => ({ ...value, [action]: event.target.checked }))} /><span>{action}</span></label></td><td><select data-testid={`select-task-order-${index}`} value={orders[action] || ''} onChange={(event) => setOrders((value) => ({ ...value, [action]: event.target.value }))} aria-label={`Порядок: ${action}`}><option value="">—</option>{taskActions.map((_, optionIndex) => <option key={optionIndex} value={String(optionIndex + 1)}>{optionIndex + 1}</option>)}</select></td><td><input data-testid={`input-task-minutes-${index}`} type="number" min="1" max="60" value={minutes[action] || ''} onChange={(event) => setMinutes((value) => ({ ...value, [action]: event.target.value }))} aria-label={`Минуты: ${action}`} /></td></tr>)}</tbody></table><div className="mt-4 flex items-center gap-3"><button data-testid="button-submit-task" type="submit" className="task-submit">Сохранить ответ <Check size={13} className="ml-1 inline" /></button>{submitted && <div className="task-notice"><CheckCircle2 size={13} className="mr-1 inline" />Ответ сохранен</div>}</div></form>;
-}
-
 function DesktopIcon({ label, icon, onClick }: { label: string; icon: ReactNode; onClick: () => void }) {
   return <button data-testid={`button-desktop-${label}`} onClick={onClick} className="desktop-icon">{icon}<span>{label}</span></button>;
 }
@@ -262,33 +387,103 @@ function DesktopIcon({ label, icon, onClick }: { label: string; icon: ReactNode;
 function Workspace() {
   const profile = getProfile();
   const [, setLocation] = useLocation();
-  const [windows, setWindows] = useState<Record<AppId, WindowState>>({ mail: { visible: false, minimized: false, maximized: false, z: 8 }, word: { visible: false, minimized: false, maximized: false, z: 8 }, ai: { visible: false, minimized: false, maximized: false, z: 8 }, messenger: { visible: false, minimized: false, maximized: false, z: 8 }, task: { visible: false, minimized: false, maximized: false, z: 8 } });
+  const [windows, setWindows] = useState<Record<AppId, WindowState>>({ mail: { visible: false, minimized: false, maximized: false, z: 8 }, word: { visible: false, minimized: false, maximized: false, z: 8 }, ai: { visible: false, minimized: false, maximized: false, z: 8 }, messenger: { visible: false, minimized: false, maximized: false, z: 8 } });
   const [active, setActive] = useState<AppId | null>(null);
   const [selectedMail, setSelectedMail] = useState('task');
   const [welcome, setWelcome] = useState(() => !storage.get('workday-welcome-seen', false));
   const [taskToast, setTaskToast] = useState(false);
   const [launcher, setLauncher] = useState(false);
   const [notice, setNotice] = useState('');
+  const [simulationStartedAt] = useState(() => {
+    const existing = storage.get<number | null>('simulationStartedAt', null);
+    if (existing) return existing;
+    const started = Date.now();
+    storage.set('simulationStartedAt', started);
+    return started;
+  });
+  const [taskStartedAt, setTaskStartedAt] = useState<number | null>(() => storage.get<number | null>('task1StartedAt', null));
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>(() => storage.get<TaskStatus>('task1Status', 'not-started'));
+  const [totalSeconds, setTotalSeconds] = useState(() => Math.max(0, Math.ceil((simulationStartedAt + 45 * 60 * 1000 - Date.now()) / 1000)));
+  const [taskSeconds, setTaskSeconds] = useState(() => taskStartedAt && taskStatus === 'active' ? Math.max(0, Math.ceil((taskStartedAt + 7 * 60 * 1000 - Date.now()) / 1000)) : 0);
+  const [completedTasks, setCompletedTasks] = useState(() => storage.get<number>('completedTasks', taskStatus === 'completed' || taskStatus === 'expired' ? 1 : 0));
   const launcherRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<HTMLButtonElement>(null);
   const [now, setNow] = useState(new Date());
-  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 30000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const totalRemaining = Math.max(0, Math.ceil((simulationStartedAt + 45 * 60 * 1000 - Date.now()) / 1000));
+      setTotalSeconds(totalRemaining);
+      if (taskStartedAt && taskStatus === 'active') {
+        const taskRemaining = Math.max(0, Math.ceil((taskStartedAt + 7 * 60 * 1000 - Date.now()) / 1000));
+        setTaskSeconds(taskRemaining);
+        if (taskRemaining === 0) {
+          storage.set('task1Status', 'expired');
+          storage.set('task1SubmittedAt', null);
+          storage.set('completedTasks', 1);
+          setTaskStatus('expired');
+          setCompletedTasks(1);
+          setNotice('Время на задание 1 закончилось');
+        }
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [simulationStartedAt, taskStartedAt, taskStatus]);
   useEffect(() => { if (!launcher) return; const onDown = (event: MouseEvent) => { if (!launcherRef.current?.contains(event.target as Node) && !startRef.current?.contains(event.target as Node)) setLauncher(false); }; document.addEventListener('mousedown', onDown); return () => document.removeEventListener('mousedown', onDown); }, [launcher]);
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 2700); return () => window.clearTimeout(timer); }, [notice]);
   useEffect(() => { const timer = window.setTimeout(() => setTaskToast(true), 2400); return () => window.clearTimeout(timer); }, []);
   const userInitials = `${profile.firstName?.[0] || 'А'}${profile.lastName?.[0] || 'С'}`.toUpperCase();
   const focus = (id: AppId) => { setActive(id); setWindows((current) => { const highest = Math.max(...Object.values(current).map((value) => value.z), 8); return { ...current, [id]: { ...current[id], visible: true, minimized: false, z: highest + 1 } }; }); };
-  const openApp = (id: AppId) => { focus(id); setLauncher(false); if (id === 'mail') setSelectedMail('task'); };
+  const openApp = (id: AppId) => { focus(id); setLauncher(false); };
   const close = (id: AppId) => { setWindows((current) => ({ ...current, [id]: { ...current[id], visible: false, minimized: false } })); if (active === id) setActive(null); };
   const minimize = (id: AppId) => { setWindows((current) => ({ ...current, [id]: { ...current[id], minimized: true } })); };
   const maximize = (id: AppId) => { setWindows((current) => ({ ...current, [id]: { ...current[id], maximized: !current[id].maximized } })); focus(id); };
   const notify = (message: string) => setNotice(message);
-  const unsupported = () => notify('Функция будет доступна в следующей версии');
-  const openTaskFromToast = () => { setTaskToast(false); focus('mail'); setSelectedMail('task'); };
-  const appIcon = (id: AppId) => id === 'mail' ? <Mail size={14} /> : id === 'word' ? <FileText size={14} /> : id === 'ai' ? <Sparkles size={14} /> : id === 'messenger' ? <MessageCircle size={14} /> : <CheckCircle2 size={14} />;
+  const handleTaskOpened = () => {
+    if (taskStartedAt || taskStatus !== 'not-started') return;
+    const started = Date.now();
+    storage.set('task1StartedAt', started);
+    storage.set('task1Status', 'active');
+    setTaskStartedAt(started);
+    setTaskStatus('active');
+    setTaskSeconds(7 * 60);
+  };
+  const handleTaskSubmitted = () => {
+    storage.set('task1SubmittedAt', Date.now());
+    storage.set('task1Status', 'completed');
+    storage.set('completedTasks', 1);
+    setTaskStatus('completed');
+    setCompletedTasks(1);
+    setTaskSeconds(0);
+    notify('Ответ отправлен');
+  };
+  const handleTaskExpired = () => {
+    storage.set('task1Status', 'expired');
+    storage.set('completedTasks', 1);
+    setTaskStatus('expired');
+    setCompletedTasks(1);
+    setTaskSeconds(0);
+    notify('Время на задание 1 закончилось');
+  };
+  const openTaskFromToast = () => { setTaskToast(false); focus('mail'); setSelectedMail('task'); handleTaskOpened(); };
+  const openCurrentTask = () => { focus('mail'); setSelectedMail('task'); if (taskStatus === 'not-started') handleTaskOpened(); };
+  const appIcon = (id: AppId) => id === 'mail' ? <Mail size={14} /> : id === 'word' ? <FileText size={14} /> : id === 'ai' ? <Sparkles size={14} /> : <MessageCircle size={14} />;
   const trayTime = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   const trayDate = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-  return <main className="desktop-stage"><div className="desktop-wallpaper" /><div className="desktop-topbar"><div className="flex items-center"><span className="mr-5 flex items-center gap-2 text-[#dce8df]"><AppMark small /><span className="hidden font-sans text-[10px] sm:inline">first workday</span></span><div className="metric"><span>ВРЕМЯ</span><strong>45:00</strong></div><div className="metric"><span>ДОСТУПНО</span><strong>07:00</strong></div><div className="metric"><span>ПРОГРЕСС</span><strong>0 из 5</strong></div></div><div className="flex items-center gap-3"><span className="hidden text-[#aec2b9] sm:inline">Среда, первый день</span><span className="user-avatar !h-6 !w-6 !bg-[#d19b66] !text-[8px]">{userInitials}</span></div></div><div className="desktop-icons"><DesktopIcon label="Почта" icon={<Mail size={24} />} onClick={() => openApp('mail')} /><DesktopIcon label="Word" icon={<FileText size={24} />} onClick={() => openApp('word')} /><DesktopIcon label="AI-помощник" icon={<Sparkles size={24} />} onClick={() => openApp('ai')} /><DesktopIcon label="Мессенджер" icon={<MessageCircle size={24} />} onClick={() => openApp('messenger')} /><DesktopIcon label="Документы" icon={<FolderOpen size={24} />} onClick={unsupported} /><DesktopIcon label="Проекты" icon={<BriefcaseBusiness size={24} />} onClick={unsupported} /><DesktopIcon label="Корзина" icon={<Trash2 size={24} />} onClick={unsupported} /></div><button data-testid="button-current-task" onClick={() => openApp('task')} className="current-task-chip"><span className="current-task-icon"><CheckCircle2 size={15} /></span><span><small>Текущее задание</small><strong>Задание 1 · 07:00</strong></span><ArrowRight size={14} /></button><div className="absolute inset-0 z-[6]" aria-hidden="true" />{(Object.keys(windows) as AppId[]).map((id) => <WindowFrame key={id} id={id} title={appLabels[id]} icon={appIcon(id)} state={windows[id]} active={active === id} onFocus={() => focus(id)} onClose={() => close(id)} onMinimize={() => minimize(id)} onMaximize={() => maximize(id)}>{id === 'mail' && <MailApp selectedId={selectedMail} setSelectedId={setSelectedMail} notify={notify} />}{id === 'word' && <WordApp notify={notify} />}{id === 'ai' && <AiApp />}{id === 'messenger' && <MessengerApp />}{id === 'task' && <TaskApp notify={notify} />}</WindowFrame>)}{taskToast && <div className="task-toast"><button data-testid="button-task-toast" onClick={openTaskFromToast}><span className="toast-kicker">Новое уведомление · 09:12</span><strong>Марина Орлова</strong><span>Первая задача · откройте, чтобы начать</span></button><button data-testid="button-dismiss-task-toast" onClick={() => setTaskToast(false)} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}{launcher && <div ref={launcherRef} className="launcher"><div className="launcher-title">Рабочие приложения</div><div className="launcher-grid">{(['mail', 'word', 'ai', 'messenger', 'task'] as AppId[]).map((id) => <button data-testid={`button-launcher-${id}`} key={id} onClick={() => openApp(id)} className="launcher-item">{appIcon(id)}{appLabels[id]}</button>)}</div><button data-testid="button-launcher-settings" onClick={unsupported} className="mt-2 flex w-full items-center gap-2 border-t border-[#b5c9bd]/20 px-2 pt-3 text-[10px] text-[#a7bbb1]"><Settings size={12} /> Настройки среды</button></div>}{notice && <div data-testid="status-workspace-notice" className="animate-toast absolute bottom-[65px] left-1/2 z-[45] -translate-x-1/2 rounded-md border border-[#d6e5d9] bg-[#f0f6ef] px-4 py-2 text-[11px] font-semibold text-[#39746a] shadow-lg">{notice}</div>}<div className="desktop-taskbar"><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger', 'task'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}</div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><div>{trayTime}</div><div>{trayDate}.{now.getFullYear()}</div></div></div></div>{welcome && <div className="welcome-backdrop"><div className="welcome-card"><div className="mark"><BriefcaseBusiness size={21} /></div><div className="eyebrow !text-[#71817a]">добро пожаловать в рабочую среду</div><h2 className="mt-3">Первый день начинается.</h2><p>Здесь уже открыты нужные инструменты. Начните с письма от Марины или откройте уведомление в правом нижнем углу.</p><button data-testid="button-close-welcome" onClick={() => { storage.set('workday-welcome-seen', true); setWelcome(false); }} className="button-primary w-full">Понятно, начать работу <ArrowRight size={15} /></button></div></div>}<div className="mobile-warning"><div className="mobile-warning-card"><MonitorIcon /><h2>Рабочее место требует экрана шире.</h2><p>Симуляция собрана как desktop-first среда. Откройте ее на экране шириной от 1100 px, чтобы все окна и панели были доступны.</p><button data-testid="button-mobile-back" onClick={() => setLocation('/instruction')} className="button-secondary mt-4 !border-[#76968c] !text-[#e6eee8]">Вернуться к инструкции</button></div></div></main>;
+  const progress = Math.round((completedTasks / 5) * 100);
+  return <main className="desktop-stage">
+    <div className="desktop-wallpaper" />
+    <div className="desktop-topbar"><div className="flex items-center"><span className="mr-5 flex items-center gap-2 text-[#dce8df]"><AppMark small /><span className="hidden font-sans text-[10px] sm:inline">first workday</span></span><div className="metric"><span>ВРЕМЯ</span><strong>{formatTimer(totalSeconds)}</strong></div>{taskStartedAt && taskStatus === 'active' && <div className="metric"><span>ЗАДАНИЕ 1</span><strong>{formatTimer(taskSeconds)}</strong></div>}<div className="metric progress-metric"><span>ВЫПОЛНЕНО {completedTasks} ИЗ 5</span><strong>{progress}%</strong><i><b style={{ width: `${progress}%` }} /></i></div></div><div className="flex items-center gap-3"><span className="hidden text-[#aec2b9] sm:inline">Среда, первый день</span><span className="user-avatar !h-6 !w-6 !bg-[#d19b66] !text-[8px]">{userInitials}</span></div></div>
+    <div className="desktop-icons"><DesktopIcon label="Почта" icon={<Mail size={24} />} onClick={() => openApp('mail')} /><DesktopIcon label="Word" icon={<FileText size={24} />} onClick={() => openApp('word')} /><DesktopIcon label="AI-помощник" icon={<Sparkles size={24} />} onClick={() => openApp('ai')} /><DesktopIcon label="Мессенджер" icon={<MessageCircle size={24} />} onClick={() => openApp('messenger')} /></div>
+    <button data-testid="button-current-task" onClick={openCurrentTask} className="current-task-chip"><span className="current-task-icon"><CheckCircle2 size={15} /></span><span><small>{completedTasks ? 'Задание 1 выполнено' : 'Текущее задание'}</small><strong>{completedTasks ? '1 из 5 заданий выполнено' : `Задание 1 · ${taskStartedAt ? formatTimer(taskSeconds) : 'Открыть задание'}`}</strong></span><ArrowRight size={14} /></button>
+    {(Object.keys(windows) as AppId[]).map((id) => <WindowFrame key={id} id={id} title={appLabels[id]} icon={appIcon(id)} state={windows[id]} active={active === id} onFocus={() => focus(id)} onClose={() => close(id)} onMinimize={() => minimize(id)} onMaximize={() => maximize(id)}>{id === 'mail' && <MailApp selectedId={selectedMail} setSelectedId={setSelectedMail} notify={notify} onTaskOpened={handleTaskOpened} taskStatus={taskStatus} onSubmitTask={handleTaskSubmitted} onTaskExpired={handleTaskExpired} />}{id === 'word' && <WordApp notify={notify} />}{id === 'ai' && <AiApp />}{id === 'messenger' && <MessengerApp />}</WindowFrame>)}
+    {taskToast && <div className="task-toast"><button data-testid="button-task-toast" onClick={openTaskFromToast}><span className="toast-kicker">Новое уведомление · 09:12</span><strong>Марина Орлова</strong><span>Первая задача · откройте, чтобы начать</span></button><button data-testid="button-dismiss-task-toast" onClick={() => setTaskToast(false)} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}
+    {launcher && <div ref={launcherRef} className="launcher"><div className="launcher-title">Рабочие приложения</div><div className="launcher-grid">{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-launcher-${id}`} key={id} onClick={() => openApp(id)} className="launcher-item">{appIcon(id)}{appLabels[id]}</button>)}</div></div>}
+    {notice && <div data-testid="status-workspace-notice" className="animate-toast absolute bottom-[65px] left-1/2 z-[45] -translate-x-1/2 rounded-md border border-[#d6e5d9] bg-[#f0f6ef] px-4 py-2 text-[11px] font-semibold text-[#39746a] shadow-lg">{notice}</div>}
+    <div className="desktop-taskbar"><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}</div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><div>{trayTime}</div><div>{trayDate}.{now.getFullYear()}</div></div></div></div>
+    {welcome && <div className="welcome-backdrop"><div className="welcome-card"><div className="mark"><BriefcaseBusiness size={21} /></div><div className="eyebrow !text-[#71817a]">добро пожаловать в рабочую среду</div><h2 className="mt-3">Первый день начинается.</h2><p>Здесь уже открыты нужные инструменты. Начните с письма от Марины или откройте уведомление в правом нижнем углу.</p><button data-testid="button-close-welcome" onClick={() => { storage.set('workday-welcome-seen', true); setWelcome(false); }} className="button-primary w-full">Понятно, начать работу <ArrowRight size={15} /></button></div></div>}
+    <div className="mobile-warning"><div className="mobile-warning-card"><MonitorIcon /><h2>Рабочее место требует экрана шире.</h2><p>Симуляция собрана как desktop-first среда. Откройте ее на экране шириной от 1100 px, чтобы все окна и панели были доступны.</p><button data-testid="button-mobile-back" onClick={() => setLocation('/instruction')} className="button-secondary mt-4 !border-[#76968c] !text-[#e6eee8]">Вернуться к инструкции</button></div></div>
+  </main>;
 }
 
 function MonitorIcon() {
