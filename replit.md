@@ -28,6 +28,10 @@ _Populate as you build — short repo map plus pointers to the source-of-truth f
 
 _Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
 
+## Development context
+
+Подробный бэклог разработки, пользовательский сценарий по дням, структура состояния симуляции, тестовый контент и Definition of Done зафиксированы в [`DEVELOPMENT_BACKLOG.md`](DEVELOPMENT_BACKLOG.md). Перед началом новой итерации сверяйтесь с этим файлом и сохраняйте заявленный сценарий Registration → Instructions → Desktop → Mail/Word/AI/Messenger → Finish.
+
 ## Product
 
 _Describe the high-level user-facing capabilities of this app once they exist._

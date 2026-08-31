@@ -60,6 +60,19 @@ const storage = {
   },
   set(key: string, value: unknown) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* localStorage may be unavailable */ }
+    // localStorage remains a fast browser cache; PostgreSQL is the durable source of truth.
+    if (key !== 'workday-profile') {
+      try {
+        const profile = JSON.parse(localStorage.getItem('workday-profile') ?? 'null') as { participantId?: string } | null;
+        if (profile?.participantId) {
+          void fetch(`/api/state/${profile.participantId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, value }),
+          });
+        }
+      } catch { /* network or storage can be unavailable while the app is booting */ }
+    }
   },
 };
 
@@ -492,6 +505,12 @@ function Workspace() {
     setTaskSeconds(0);
     notify('Время на задание 1 закончилось');
   };
+  const canFinish = completedTasks >= 5 || totalSeconds === 0;
+  const finishSimulation = () => {
+    if (!canFinish) return;
+    storage.set('simulationFinished', true);
+    setLocation('/finish');
+  };
   const openTaskFromToast = () => { setTaskToast(false); focus('mail'); setSelectedMail('task'); handleTaskOpened(); };
   const openCurrentTask = () => { focus('mail'); setSelectedMail('task'); if (taskStatus === 'not-started') handleTaskOpened(); };
   const appIcon = (id: AppId) => id === 'mail' ? <Mail size={14} /> : id === 'word' ? <FileText size={14} /> : id === 'ai' ? <Sparkles size={14} /> : <MessageCircle size={14} />;
@@ -507,7 +526,7 @@ function Workspace() {
     {taskToast && <div className="task-toast"><button data-testid="button-task-toast" onClick={openTaskFromToast}><span className="toast-kicker">Новое уведомление · 09:12</span><strong>Марина Орлова</strong><span>Первая задача · откройте, чтобы начать</span></button><button data-testid="button-dismiss-task-toast" onClick={() => setTaskToast(false)} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}
     {launcher && <div ref={launcherRef} className="launcher"><div className="launcher-title">Рабочие приложения</div><div className="launcher-grid">{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-launcher-${id}`} key={id} onClick={() => openApp(id)} className="launcher-item">{appIcon(id)}{appLabels[id]}</button>)}</div></div>}
     {notice && <div data-testid="status-workspace-notice" className="animate-toast absolute bottom-[65px] left-1/2 z-[45] -translate-x-1/2 rounded-md border border-[#d6e5d9] bg-[#f0f6ef] px-4 py-2 text-[11px] font-semibold text-[#39746a] shadow-lg">{notice}</div>}
-    <div className="desktop-taskbar"><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}</div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><div>{trayTime}</div><div>{trayDate}.{now.getFullYear()}</div></div></div></div>
+    <div className="desktop-taskbar"><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}<button data-testid="button-finish-simulation" onClick={finishSimulation} disabled={!canFinish} className="taskbar-button disabled:cursor-not-allowed disabled:opacity-40"><CheckCircle2 size={14} /><span>Завершить день</span></button></div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><div>{trayTime}</div><div>{trayDate}.{now.getFullYear()}</div></div></div></div>
     {welcome && <div className="welcome-backdrop"><div className="welcome-card"><div className="mark"><BriefcaseBusiness size={21} /></div><div className="eyebrow !text-[#71817a]">добро пожаловать в рабочую среду</div><h2 className="mt-3">Первый день начинается.</h2><p>Здесь уже открыты нужные инструменты. Начните с письма от Марины или откройте уведомление в правом нижнем углу.</p><button data-testid="button-close-welcome" onClick={() => { storage.set('workday-welcome-seen', true); setWelcome(false); }} className="button-primary w-full">Понятно, начать работу <ArrowRight size={15} /></button></div></div>}
     <div className="mobile-warning"><div className="mobile-warning-card"><MonitorIcon /><h2>Рабочее место требует экрана шире.</h2><p>Симуляция собрана как desktop-first среда. Откройте ее на экране шириной от 1100 px, чтобы все окна и панели были доступны.</p><button data-testid="button-mobile-back" onClick={() => setLocation('/instruction')} className="button-secondary mt-4 !border-[#76968c] !text-[#e6eee8]">Вернуться к инструкции</button></div></div>
   </main>;
@@ -522,11 +541,48 @@ function NotFound() {
   return <main className="landing-shell flex min-h-[100dvh] items-center justify-center px-6"><div className="text-center"><div className="eyebrow mb-4">ошибка 404</div><h1 className="serif text-6xl text-[#294447]">Страница ушла<br /><em>на обед.</em></h1><button data-testid="button-not-found-home" onClick={() => setLocation('/')} className="button-primary mt-8">Вернуться на старт <ArrowLeft size={15} /></button></div></main>;
 }
 
+function Finish() {
+  const profile = getProfile();
+  const [, setLocation] = useLocation();
+  return <main className="landing-shell flex min-h-[100dvh] items-center justify-center px-6"><div className="paper-panel w-full max-w-[560px] p-8 text-center md:p-12"><AppMark /><div className="eyebrow mt-6">симуляция завершена</div><h1 className="serif mt-3 text-5xl leading-none text-[#294447]">Рабочий день<br /><em>позади.</em></h1><p className="mx-auto mt-5 max-w-[390px] text-sm leading-6 text-[#6e7b75]">Спасибо за прохождение симуляции{profile.firstName ? `, ${profile.firstName}` : ''}. Ваши ответы сохранены.</p><button data-testid="button-finish-home" onClick={() => setLocation('/')} className="button-primary mt-8">Вернуться на старт <ArrowRight size={15} /></button></div></main>;
+}
+
 function Router() {
-  return <Switch><Route path="/" component={Landing} /><Route path="/register" component={Register} /><Route path="/instruction" component={Instruction} /><Route path="/demo" component={Demo} /><Route path="/workspace" component={Workspace} /><Route component={NotFound} /></Switch>;
+  return <Switch><Route path="/" component={Landing} /><Route path="/register" component={Register} /><Route path="/instruction" component={Instruction} /><Route path="/demo" component={Demo} /><Route path="/workspace" component={Workspace} /><Route path="/finish" component={Finish} /><Route component={NotFound} /></Switch>;
 }
 
 function App() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const participantId = getProfile().participantId;
+    if (!participantId) { setHydrated(true); return; }
+    void fetch(`/api/state/${participantId}`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((result: { data?: Record<string, unknown> } | null) => {
+        const serverData = result?.data ?? {};
+        for (const [key, value] of Object.entries(serverData)) {
+          try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* cache is optional */ }
+        }
+        // One-time migration for participants who already have an MVP localStorage session.
+        const pendingMigration: Promise<unknown>[] = [];
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index);
+          if (!key || key === 'workday-profile' || key in serverData) continue;
+          try {
+            const value = JSON.parse(localStorage.getItem(key) ?? 'null');
+            pendingMigration.push(fetch(`/api/state/${participantId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key, value }),
+            }));
+          } catch { /* ignore malformed cache entries */ }
+        }
+        void Promise.allSettled(pendingMigration);
+      })
+      .catch(() => { /* cached state can still be used offline */ })
+      .finally(() => setHydrated(true));
+  }, []);
+  if (!hydrated) return null;
   return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><ErrorBoundary resetKey={window.location.pathname}><Router /></ErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 

@@ -16,7 +16,7 @@ API_LOG="/tmp/mvpsim_api.log"
 FRONT_LOG="/tmp/mvpsim_front.log"
 
 # Start backend as a detached process so it survives the shell exiting.
-nohup env PORT=5000 DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres" \
+nohup env PORT=5000 DATABASE_URL="${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/postgres}" \
   pnpm --filter @workspace/api-server run dev >"$API_LOG" 2>&1 &
 API_PID=$!
 

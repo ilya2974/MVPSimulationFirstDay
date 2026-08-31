@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { ReplitConnectors } from "@replit/connectors-sdk";
+import { db } from "@workspace/db";
+import { participants, simulationSessions, simulationState } from "@workspace/db/schema";
 
 const router: IRouter = Router();
 
@@ -41,61 +42,28 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  const baseId = process.env["AIRTABLE_BASE_ID"];
-  const tableName = process.env["AIRTABLE_TABLE_NAME"];
   const participantId = randomUUID();
 
-  if (!baseId || !tableName) {
-    console.warn("Airtable not configured, using dev-mode registration fallback.");
-    res.status(201).json({
-      participantId,
-      devMode: true,
-      message: "Регистрация сохранена в dev mode без Airtable.",
-    });
-    return;
-  }
-
-  const fields = {
-    participantId,
-    firstName: req.body.firstName.trim(),
-    lastName: req.body.lastName.trim(),
-    age: req.body.age,
-    email: req.body.email.trim().toLowerCase(),
-    consent: req.body.consent,
-    registeredAt: new Date().toISOString(),
-  };
-  const endpoint = `/v0/${baseId}/${encodeURIComponent(tableName)}`;
-  const requestBody = JSON.stringify({ records: [{ fields }], typecast: true });
-
   try {
-    let response: Response;
-    const token = process.env["AIRTABLE_TOKEN"];
-    if (token) {
-      response = await fetch(`https://api.airtable.com${endpoint}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: requestBody,
+    const now = new Date();
+    await db.transaction(async (tx) => {
+      await tx.insert(participants).values({
+        id: participantId,
+        firstName: req.body.firstName.trim(),
+        lastName: req.body.lastName.trim(),
+        age: req.body.age,
+        email: req.body.email.trim().toLowerCase(),
+        consent: req.body.consent,
+        registeredAt: now,
       });
-    } else {
-      const connectors = new ReplitConnectors();
-      response = await connectors.proxy("airtable", endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: requestBody,
-      });
-    }
-
-    if (!response.ok) {
-      const details = await response.text();
-      console.error("Airtable registration failed", response.status, details);
-      res.status(502).json({ message: "Не удалось сохранить регистрацию в Airtable." });
-      return;
-    }
+      await tx.insert(simulationSessions).values({ id: randomUUID(), participantId });
+      await tx.insert(simulationState).values({ participantId, data: {}, updatedAt: now });
+    });
 
     res.status(201).json({ participantId });
   } catch (error) {
     console.error("Registration request failed", error);
-    res.status(502).json({ message: "Не удалось сохранить регистрацию в Airtable." });
+    res.status(500).json({ message: "Не удалось сохранить регистрацию." });
   }
 });
 
