@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Симуляция рабочего дня"
+description = "Кликабельный frontend-прототип первого рабочего дня молодого специалиста: onboarding, виртуальный рабочий стол, корпоративная почта, Word, AI-помощник, мессенджер и первое задание."
+version = "1.0.0"
+id = "artifacts/workday-simulation"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22035
+
+[services.development]
+run = "pnpm --filter @workspace/workday-simulation run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/workday-simulation", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/workday-simulation/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22035"
+BASE_PATH = "/"

@@ -1,0 +1,920 @@
+[20:53:51.417] [32mINFO[39m (2744): [36mServer listening[39m
+    [35mport[39m: 5050
+[20:54:03.408] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 1,
+      "method": "GET",
+      "url": "/api/healthz"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 5
+[20:56:25.311] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 2,
+      "method": "POST",
+      "url": "/api/register"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 2405
+[20:56:25.672] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 3,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 355
+[20:56:29.005] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 4,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 396
+[20:56:29.461] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 9,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 319
+[20:56:29.976] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 5,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1336
+[20:56:29.986] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 6,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1345
+[20:56:30.061] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 7,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1419
+[20:56:30.483] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 10,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 461
+[20:56:31.991] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 8,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3349
+[20:56:33.828] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 12,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 397
+[20:56:33.832] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 11,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 402
+[20:56:39.573] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 14,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 369
+[20:56:39.612] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 13,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 408
+[20:56:40.657] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 16,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 421
+[20:56:40.657] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 15,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 422
+[20:56:54.264] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 18,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1311
+[20:56:54.453] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 19,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1164
+[20:56:54.569] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 20,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1274
+[20:56:59.115] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 17,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 6167
+[20:57:08.554] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 22,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2200
+[20:57:08.899] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 21,
+      "method": "POST",
+      "url": "/api/ai/chat"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2571
+[20:57:10.843] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 23,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1940
+[20:57:20.484] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 25,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2181
+[20:57:20.669] [32mINFO[39m (2744): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 24,
+      "method": "POST",
+      "url": "/api/ai/chat"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 2367
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (C:\Users\Ilya-\Downloads\MVPSimulationFirstDay-main\node_modules\.pnpm\pino-http@10.5.0\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Ilya-\Downloads\MVPSimulationFirstDay-main\node_modules\.pnpm\pino-http@10.5.0\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[20:57:24.025] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 26,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3314
+[20:57:29.278] [32mINFO[39m (2744): [36mrequest errored[39m
+    [35mreq[39m: {
+      "id": 27,
+      "method": "POST",
+      "url": "/api/ai/chat"
+    }
+    [35mres[39m: {
+      "statusCode": 503
+    }
+    [35mresponseTime[39m: 1966
+    err: {
+      "type": "Error",
+      "message": "failed with status code 503",
+      "stack":
+          Error: failed with status code 503
+              at onResFinished (C:\Users\Ilya-\Downloads\MVPSimulationFirstDay-main\node_modules\.pnpm\pino-http@10.5.0\node_modules\pino-http\logger.js:115:39)
+              at ServerResponse.onResponseComplete (C:\Users\Ilya-\Downloads\MVPSimulationFirstDay-main\node_modules\.pnpm\pino-http@10.5.0\node_modules\pino-http\logger.js:178:14)
+              at ServerResponse.emit (node:events:521:24)
+              at onFinish (node:_http_outgoing:1079:10)
+              at callback (node:internal/streams/writable:764:21)
+              at afterWrite (node:internal/streams/writable:708:5)
+              at afterWriteTick (node:internal/streams/writable:694:10)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+    }
+[20:57:29.551] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 28,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2237
+[20:57:30.682] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 29,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1400
+[20:57:36.561] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 31,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 337
+[20:57:41.209] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 30,
+      "method": "POST",
+      "url": "/api/ai/chat"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4987
+[20:57:41.786] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 32,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 573
+[20:57:44.844] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 33,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 628
+[20:57:47.007] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 34,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 475
+[20:57:48.210] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 35,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 648
+[20:57:51.555] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 36,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 667
+[20:57:52.089] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 37,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 516
+[20:57:53.870] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 38,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2171
+[20:57:54.514] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 40,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 563
+[20:58:01.189] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 39,
+      "method": "POST",
+      "url": "/api/ai/chat"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 7240
+[20:58:02.380] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 41,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1187
+[20:58:39.162] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 42,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3872
+[20:58:43.932] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 43,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 901
+[20:59:00.093] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 46,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1649
+[20:59:00.659] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 49,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2210
+[20:59:01.151] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 48,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2702
+[20:59:01.169] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 45,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2725
+[20:59:01.176] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 47,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2728
+[20:59:01.445] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 50,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1349
+[20:59:03.966] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 44,
+      "method": "PATCH",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 20908
+[20:59:20.127] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 51,
+      "method": "GET",
+      "url": "/api/state/83b5c2cb-3fd1-4b6b-bd0f-a274e658adc2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2122
+[20:59:29.334] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 52,
+      "method": "POST",
+      "url": "/api/register"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 1724
+[20:59:29.929] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 53,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 592
+[20:59:31.686] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 54,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 478
+[20:59:32.285] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 59,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 548
+[20:59:33.114] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 55,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1878
+[20:59:33.151] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 57,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1913
+[20:59:33.158] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 56,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1921
+[20:59:33.425] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 58,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2186
+[20:59:35.142] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 60,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3173
+[20:59:40.118] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 61,
+      "method": "GET",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 542
+[20:59:40.894] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 62,
+      "method": "PATCH",
+      "url": "/api/state/b08bff75-f64a-4d3d-9bce-98ff7f07e4b8"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 771
+[21:00:02.715] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 63,
+      "method": "POST",
+      "url": "/api/register"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 3062
+[21:00:03.105] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 64,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 386
+[21:00:05.671] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 65,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1201
+[21:00:06.311] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 71,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 638
+[21:00:06.803] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 68,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2312
+[21:00:06.901] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 66,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2413
+[21:00:07.540] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 69,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3047
+[21:00:07.664] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 67,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3174
+[21:00:08.342] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 70,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3354
+[21:00:08.723] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 73,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1421
+[21:00:08.758] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 72,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1457
+[21:00:14.910] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 76,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 708
+[21:00:14.912] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 75,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 711
+[21:00:14.940] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 77,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 737
+[21:00:15.222] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 78,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1017
+[21:00:15.399] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 74,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1198
+[21:00:15.408] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 79,
+      "method": "PATCH",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 1203
+[21:00:23.311] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 80,
+      "method": "GET",
+      "url": "/api/state/b5392ff2-490f-4f50-836c-9c09eb99210d"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 216
+[21:00:52.210] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 81,
+      "method": "POST",
+      "url": "/api/register"
+    }
+    [35mres[39m: {
+      "statusCode": 201
+    }
+    [35mresponseTime[39m: 4534
+[21:00:52.921] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 82,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 708
+[21:00:54.182] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 83,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 537
+[21:00:55.860] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 85,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2198
+[21:00:55.956] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 86,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2293
+[21:00:56.156] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 84,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 2494
+[21:00:57.613] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 88,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 3451
+[21:00:57.677] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 87,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 4013
+[21:00:58.157] [32mINFO[39m (2744): [36mrequest completed[39m
+    [35mreq[39m: {
+      "id": 89,
+      "method": "PATCH",
+      "url": "/api/state/6903dcd6-5893-4dbe-b142-adc74087ced2"
+    }
+    [35mres[39m: {
+      "statusCode": 200
+    }
+    [35mresponseTime[39m: 560
