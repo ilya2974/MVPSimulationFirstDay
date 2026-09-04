@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -48,6 +48,7 @@ type WindowState = { visible: boolean; minimized: boolean; maximized: boolean; z
 type MailFolder = 'inbox' | 'archive' | 'trash' | 'sent';
 type MailRecord = { id: string; sender: string; email: string; subject: string; preview: string; date: string; unread: boolean; icon: string; read: boolean; flagged: boolean; folder: MailFolder };
 type TaskStatus = 'active' | 'completed' | 'expired' | 'not-started';
+type TaskReplyOption = { label: string; text: string };
 
 const storage = {
   get<T>(key: string, fallback: T): T {
@@ -76,12 +77,36 @@ const storage = {
   },
 };
 
+function resetSimulationStorage() {
+  try {
+    const keysToRemove: string[] = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key && (key.startsWith('workday-') || /^task\d/.test(key) || key.startsWith('simulation') || key === 'completedTasks')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  } catch { /* localStorage may be unavailable */ }
+}
+
 const appLabels: Record<AppId, string> = {
   mail: 'Почта',
   word: 'Word',
   ai: 'AI-помощник',
   messenger: 'Мессенджер',
 };
+
+const xpIconSrc: Record<AppId, string> = {
+  mail: '/xp-icons/mail.png',
+  word: '/xp-icons/word.png',
+  ai: '/xp-icons/ai.png',
+  messenger: '/xp-icons/messenger.png',
+};
+
+function XpAppIcon({ id, size = 18 }: { id: AppId; size?: number }) {
+  return <img className="xp-app-icon" src={xpIconSrc[id]} alt="" aria-hidden="true" style={{ width: size, height: size }} />;
+}
 
 const mailItems = [
   { id: 'task', sender: 'Марина Орлова', email: 'marina.orlova@changellenge.ru', subject: 'Первая задача', preview: 'Добро пожаловать в команду. Начнем с небольшого исследования...', date: '09:12', unread: true, icon: 'МO' },
@@ -95,6 +120,27 @@ const mailItems = [
   { id: 'brief', sender: 'Марина Орлова', email: 'marina.orlova@changellenge.ru', subject: 'Материалы к встрече', preview: 'Несколько документов, которые пригодятся позже.', date: 'Чт', unread: false, icon: 'МO' },
   { id: 'welcome', sender: 'Changellenge', email: 'hello@changellenge.ru', subject: 'Ваш рабочий аккаунт готов', preview: 'Данные для первого входа и полезные ссылки.', date: 'Чт', unread: false, icon: 'CH' },
 ];
+
+const taskReplyOptions: TaskReplyOption[] = [
+  { label: 'А', text: 'Марина, доброе утро! Задачу получил. Подготовлю концепцию, через полчаса вернусь с промежуточным статусом, через час направлю итоговый документ.' },
+  { label: 'Б', text: 'Доброе утро, Марина! Спасибо за задачу, приступаю к подготовке предложения. Звучит интересно, буду рад обсудить идею с командой на встрече.' },
+  { label: 'В', text: 'Марина, добрый день! Подскажите, есть ли в компании опыт создания других ИИ-помощников, который стоит учесть в проекте по помощи при адаптации?' },
+  { label: 'Г', text: 'Марина, спасибо за задачу! Подскажите, пожалуйста, уже были встречи по обсуждению проекта? Если есть результаты прошлых обсуждений, буду рад изучить их при подготовке концепции.' },
+];
+
+const taskFollowupMail: MailRecord = {
+  id: 'task-followup',
+  sender: 'Марина Орлова',
+  email: 'marina.orlova@changellenge.ru',
+  subject: 'Шаблон плана к встрече',
+  preview: 'Спасибо за ответ. Заполни, пожалуйста, приложенный шаблон перед встречей.',
+  date: '09:14',
+  unread: true,
+  read: false,
+  flagged: true,
+  folder: 'inbox',
+  icon: 'МО',
+};
 
 function getInitialMailRecords(): MailRecord[] {
   const readIds = storage.get<string[]>('workday-mail-read', []);
@@ -162,13 +208,13 @@ function PublicHeader() {
 function Landing() {
   const [, setLocation] = useLocation();
   return (
-    <main className="landing-shell">
+    <main className="landing-shell modern-landing">
       <PublicHeader />
       <section className="mx-auto grid min-h-[640px] w-full max-w-[1180px] items-center gap-12 px-6 pb-14 pt-8 md:grid-cols-[1.08fr_.92fr] md:px-10 md:pt-14">
         <div className="animate-rise">
           <div className="eyebrow mb-7">Changellenge &gt;&gt; / практическая диагностика</div>
-          <h1 className="serif max-w-[650px] text-[clamp(58px,8vw,104px)] leading-[.88] tracking-[-.045em] text-[#243d40]">Проверьте себя<br /><em className="text-[#39746a]">в деле.</em></h1>
-          <p className="mt-8 max-w-[445px] text-[16px] leading-7 text-[#63716c]">Тест-симуляция первого рабочего дня от Changellenge &gt;&gt;. Войдите в рабочую среду, разберитесь с задачами и покажите, как вы принимаете решения.</p>
+          <h1 className="serif max-w-[650px] text-[clamp(58px,8vw,104px)] leading-[.88] tracking-[-.045em] text-[#243d40]">Симуляция<br /><em className="text-[#39746a]">первого дня.</em></h1>
+          <p className="mt-8 max-w-[445px] text-[16px] leading-7 text-[#63716c]">Войдите в спокойную рабочую среду, разберитесь с письмами, задачами и покажите, как вы принимаете решения в реальном сценарии.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             <button data-testid="button-start-simulation" onClick={() => setLocation('/register')} className="button-primary">Начать симуляцию <ArrowRight size={16} /></button>
             <button data-testid="button-about-simulation" onClick={() => document.getElementById('about-simulation')?.scrollIntoView({ behavior: 'smooth' })} className="button-secondary">Как это устроено <ChevronDown size={15} /></button>
@@ -199,7 +245,7 @@ function Landing() {
 
 function AuthFrame({ step, children }: { step: number; children: ReactNode }) {
   return (
-    <main className="landing-shell min-h-[100dvh]">
+    <main className="landing-shell modern-landing auth-flow min-h-[100dvh]">
       <PublicHeader />
       <div className="mx-auto grid w-full max-w-[1050px] gap-12 px-6 pb-20 pt-10 md:grid-cols-[.72fr_1.28fr] md:px-10 md:pt-20">
         <div className="animate-rise pt-3"><div className="eyebrow mb-5">первый рабочий день / 0{step} из 03</div><div className="progress-dots mb-8"><i className={step >= 1 ? 'active' : ''} /><i className={step >= 2 ? 'active' : ''} /><i className={step >= 3 ? 'active' : ''} /></div><h1 className="serif max-w-[340px] text-6xl leading-[.9] tracking-[-.04em] text-[#294447]">{step === 1 ? <>Сначала<br /><em>познакомимся.</em></> : step === 2 ? <>Теперь<br /><em>разберемся.</em></> : <>Готовы<br /><em>войти?</em></>}</h1><p className="mt-7 max-w-[310px] text-sm leading-6 text-[#6c7973]">{step === 1 ? 'Несколько деталей — и мы соберем для вас личную рабочую среду.' : 'Дальше вы окажетесь внутри виртуального рабочего места.'}</p></div>
@@ -229,6 +275,15 @@ function Register() {
       return;
     }
 
+    if (form.email.trim().toLowerCase() === 'test@test.test') {
+      resetSimulationStorage();
+    }
+
+    const continueLocally = () => {
+      storage.set('workday-profile', { ...form, age: String(ageValue) });
+      setLocation('/instruction');
+    };
+
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
@@ -244,23 +299,28 @@ function Register() {
           setLocation('/instruction');
           return;
         }
-        throw new Error(reason);
+        if (response.status >= 500) {
+          continueLocally();
+          return;
+        }
+        setError(reason);
+        return;
       }
 
       if (!result.participantId) {
-        throw new Error('registration_failed');
+        continueLocally();
+        return;
       }
 
       storage.set('workday-profile', { ...form, age: String(ageValue), participantId: result.participantId });
       setLocation('/instruction');
-    } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : 'Не удалось завершить регистрацию. Попробуйте еще раз.';
-      setError(message);
+    } catch {
+      continueLocally();
     } finally {
       setSubmitting(false);
     }
   };
-  return <AuthFrame step={1}><div className="eyebrow mb-3">ваш профиль</div><h2 className="serif text-4xl text-[#294447]">Короткая анкета</h2><p className="mt-3 max-w-[430px] text-sm leading-6 text-[#6e7b75]">Имя появится внутри симуляции — в письмах, чате и рабочем профиле.</p><form onSubmit={submit} className="mt-8 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Фамилия</span><input data-testid="input-last-name" required value={form.lastName} onChange={update('lastName')} className="form-input" placeholder="Орлова" /></label><label><span className="field-label">Имя</span><input data-testid="input-first-name" required value={form.firstName} onChange={update('firstName')} className="form-input" placeholder="Мария" /></label></div><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Возраст</span><input data-testid="input-age" required type="number" min="16" max="75" value={form.age} onChange={update('age')} className="form-input" placeholder="24" /></label><label><span className="field-label">Адрес электронной почты</span><input data-testid="input-email" required type="email" value={form.email} onChange={update('email')} className="form-input" placeholder="maria@example.ru" /></label></div><label className="flex cursor-pointer gap-3 pt-1 text-xs leading-5 text-[#718078]"><input data-testid="checkbox-consent" type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#39746a]" required /><span>Согласна на использование этих данных для прохождения симуляции и сохранение анкеты в рабочей базе.</span></label>{error && <div data-testid="status-registration-error" className="rounded-md border border-[#e2b7ac] bg-[#fff1ed] px-3 py-2 text-xs text-[#a2544b]">{error}</div>}<div className="flex items-center justify-between gap-4 pt-3"><button data-testid="button-back-landing" type="button" onClick={() => setLocation('/')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-submit-registration" type="submit" disabled={submitting} className="button-primary disabled:cursor-wait disabled:opacity-60">{submitting ? 'Регистрация...' : 'Зарегистрироваться'} {!submitting && <ArrowRight size={15} />}</button></div></form></AuthFrame>;
+  return <AuthFrame step={1}><div className="eyebrow mb-3">ваш профиль</div><h2 className="serif text-4xl text-[#294447]">Короткая анкета</h2><p className="mt-3 max-w-[430px] text-sm leading-6 text-[#6e7b75]">Имя появится внутри симуляции — в письмах, чате и рабочем профиле.</p><form onSubmit={submit} className="mt-8 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Фамилия</span><input data-testid="input-last-name" required value={form.lastName} onChange={update('lastName')} className="form-input" placeholder="Орлова" /></label><label><span className="field-label">Имя</span><input data-testid="input-first-name" required value={form.firstName} onChange={update('firstName')} className="form-input" placeholder="Мария" /></label></div><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Возраст</span><input data-testid="input-age" required type="text" inputMode="numeric" pattern="[0-9]*" minLength={1} maxLength={2} value={form.age} onChange={update('age')} className="form-input" placeholder="24" /></label><label><span className="field-label">Адрес электронной почты</span><input data-testid="input-email" required type="email" value={form.email} onChange={update('email')} className="form-input" placeholder="maria@example.ru" /></label></div><label className="flex cursor-pointer gap-3 pt-1 text-xs leading-5 text-[#718078]"><input data-testid="checkbox-consent" type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#39746a]" required /><span>Согласна на использование этих данных для прохождения симуляции и сохранение анкеты в рабочей базе.</span></label>{error && <div data-testid="status-registration-error" className="rounded-md border border-[#e2b7ac] bg-[#fff1ed] px-3 py-2 text-xs text-[#a2544b]">{error}</div>}<div className="flex items-center justify-between gap-4 pt-3"><button data-testid="button-back-landing" type="button" onClick={() => setLocation('/')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-submit-registration" type="submit" disabled={submitting || !consent} className="button-primary disabled:cursor-wait disabled:opacity-60">{submitting ? 'Регистрация...' : 'Зарегистрироваться'} {!submitting && <ArrowRight size={15} />}</button></div></form></AuthFrame>;
 }
 
 function Instruction() {
@@ -277,17 +337,81 @@ function Demo() {
 
 function WindowFrame({ id, title, icon, state, active, onFocus, onClose, onMinimize, onMaximize, children }: { id: AppId; title: string; icon: ReactNode; state: WindowState; active: boolean; onFocus: () => void; onClose: () => void; onMinimize: () => void; onMaximize: () => void; children: ReactNode }) {
   const positions: Record<AppId, React.CSSProperties> = { mail: { left: '9%', top: '8%', width: '82%', height: '78%' }, word: { left: '18%', top: '9%', width: '64%', height: '76%' }, ai: { left: '27%', top: '13%', width: '47%', height: '65%' }, messenger: { left: '30%', top: '16%', width: '43%', height: '59%' } };
-  return <section data-testid={`window-${id}`} className={`app-window ${state.maximized ? 'is-max' : ''}`} style={{ ...positions[id], zIndex: state.z, display: state.visible && !state.minimized ? 'flex' : 'none' }} onMouseDown={onFocus}><header className={`app-titlebar ${active ? 'active' : ''}`} onDoubleClick={onMaximize}><div className="app-title">{icon}<span>{title}</span></div><div className="window-controls"><button data-testid={`button-minimize-${id}`} className="window-control" onClick={onMinimize} aria-label="Свернуть"><Minus size={14} /></button><button data-testid={`button-maximize-${id}`} className="window-control" onClick={onMaximize} aria-label="Развернуть"><Square size={12} /></button><button data-testid={`button-close-${id}`} className="window-control close" onClick={onClose} aria-label="Закрыть"><X size={14} /></button></div></header><div className="app-content">{children}</div></section>;
+  const frameRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(() => storage.get<Record<string, { left: number; top: number }>>('workday-window-positions', {})[id] ?? null);
+  const latestPosition = useRef(position);
+  const startDragging = (event: ReactPointerEvent<HTMLElement>) => {
+    if (state.maximized || (event.target as HTMLElement).closest('button')) return;
+    const frame = frameRef.current;
+    if (!frame) return;
+    const rect = frame.getBoundingClientRect();
+    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+    onFocus();
+    event.preventDefault();
+  };
+  const dragWindow = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = dragRef.current;
+    const frame = frameRef.current;
+    const desktop = frame?.parentElement;
+    if (!drag || drag.pointerId !== event.pointerId || !frame || !desktop) return;
+    const desktopRect = desktop.getBoundingClientRect();
+    const frameRect = frame.getBoundingClientRect();
+    const maxLeft = Math.max(0, desktopRect.width - frameRect.width);
+    const minTop = 43;
+    const maxTop = Math.max(minTop, desktopRect.height - frameRect.height - 58);
+    const next = {
+      left: Math.min(maxLeft, Math.max(0, event.clientX - desktopRect.left - drag.offsetX)),
+      top: Math.min(maxTop, Math.max(minTop, event.clientY - desktopRect.top - drag.offsetY)),
+    };
+    latestPosition.current = next;
+    setPosition(next);
+  };
+  const stopDragging = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setDragging(false);
+    if (latestPosition.current) {
+      const saved = storage.get<Record<string, { left: number; top: number }>>('workday-window-positions', {});
+      storage.set('workday-window-positions', { ...saved, [id]: latestPosition.current });
+    }
+  };
+  return <section ref={frameRef} data-testid={`window-${id}`} className={`app-window ${state.maximized ? 'is-max' : ''} ${dragging ? 'is-dragging' : ''}`} style={{ ...positions[id], ...(position ?? {}), zIndex: state.z, display: state.visible && !state.minimized ? 'flex' : 'none' }} onMouseDown={onFocus}><header className={`app-titlebar ${active ? 'active' : ''}`} onDoubleClick={onMaximize} onPointerDown={startDragging} onPointerMove={dragWindow} onPointerUp={stopDragging} onPointerCancel={stopDragging}><div className="app-title">{icon}<span>{title}</span></div><div className="window-controls"><button data-testid={`button-minimize-${id}`} className="window-control" onClick={onMinimize} aria-label="Свернуть"><Minus size={14} /></button><button data-testid={`button-maximize-${id}`} className="window-control" onClick={onMaximize} aria-label="Развернуть"><Square size={12} /></button><button data-testid={`button-close-${id}`} className="window-control close" onClick={onClose} aria-label="Закрыть"><X size={14} /></button></div></header><div className="app-content">{children}</div></section>;
 }
 
-function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, taskStatus, onSubmitTask, onTaskExpired }: { selectedId: string; setSelectedId: (id: string) => void; notify: (message: string) => void; onTaskOpened: () => void; taskStatus: TaskStatus; onSubmitTask: () => void; onTaskExpired: () => void }) {
+function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, taskStatus, onReplySelected, fileDownloaded, onFileDownloaded }: { selectedId: string; setSelectedId: (id: string) => void; notify: (message: string) => void; onTaskOpened: () => void; taskStatus: TaskStatus; onReplySelected: () => void; fileDownloaded: boolean; onFileDownloaded: () => void }) {
   const [folder, setFolder] = useState('Входящие');
-  const [records, setRecords] = useState<MailRecord[]>(() => storage.get<MailRecord[]>('workday-mail-records', getInitialMailRecords()));
+  const [taskReply, setTaskReply] = useState<number | null>(() => storage.get<number | null>('task1ReplyChoice', null));
+  const [records, setRecords] = useState<MailRecord[]>(() => {
+    const saved = storage.get<MailRecord[]>('workday-mail-records', getInitialMailRecords());
+    const savedReply = storage.get<number | null>('task1ReplyChoice', null);
+    return savedReply !== null && !saved.some((mail) => mail.id === taskFollowupMail.id) ? [taskFollowupMail, ...saved] : saved;
+  });
   const [drafts, setDrafts] = useState<MailRecord[]>(() => storage.get<MailRecord[]>('workday-mail-drafts', []));
   const [composeOpen, setComposeOpen] = useState(false);
   const [draft, setDraft] = useState({ id: '', to: '', subject: '', body: '' });
   useEffect(() => { storage.set('workday-mail-records', records); }, [records]);
   useEffect(() => { storage.set('workday-mail-drafts', drafts); }, [drafts]);
+  useEffect(() => {
+    if (taskStatus !== 'completed') return;
+    setRecords((current) => current.some((mail) => mail.id === 'task-submission') ? current : [...current, {
+      id: 'task-submission',
+      sender: 'Вы',
+      email: 'marina.orlova@changellenge.ru',
+      subject: 'Заполненный план к встрече',
+      preview: 'План_работы_к_встрече.docx',
+      date: 'сейчас',
+      unread: false,
+      read: true,
+      flagged: false,
+      folder: 'sent',
+      icon: 'ВЫ',
+    }]);
+  }, [taskStatus]);
   const selected = records.find((mail) => mail.id === selectedId) || records[0] || getInitialMailRecords()[0];
   const unreadCount = records.filter((mail) => mail.folder === 'inbox' && !mail.read).length;
   const folderConfig = [
@@ -307,6 +431,30 @@ function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, taskStatus, 
       storage.set('workday-mail-read', [...records.filter((item) => item.read || item.id === id).map((item) => item.id)]);
     }
     if (mail?.id === 'task') onTaskOpened();
+  };
+  const selectTaskReply = (index: number) => {
+    if (taskReply !== null || taskStatus === 'completed' || taskStatus === 'expired') return;
+    if (taskStatus === 'not-started') onTaskOpened();
+    const option = taskReplyOptions[index];
+    if (!option) return;
+    const sentReply: MailRecord = {
+      id: 'reply-to-marina',
+      sender: 'Вы',
+      email: 'marina.orlova@changellenge.ru',
+      subject: 'Re: Первая задача',
+      preview: option.text,
+      date: '09:13',
+      unread: false,
+      read: true,
+      flagged: false,
+      folder: 'sent',
+      icon: 'ВЫ',
+    };
+    setTaskReply(index);
+    storage.set('task1ReplyChoice', index);
+    setRecords((current) => [taskFollowupMail, ...current.filter((mail) => mail.id !== taskFollowupMail.id && mail.id !== sentReply.id), sentReply]);
+    notify('Ответ Марине отправлен');
+    onReplySelected();
   };
   const visibleRecords = folder === 'Входящие'
     ? records.filter((mail) => mail.folder === 'inbox')
@@ -347,7 +495,7 @@ function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, taskStatus, 
       {folder === 'Черновики' ? drafts.map((item) => <button key={item.id} data-testid={`button-draft-${item.id}`} onClick={() => openDraft(item)} className="mail-row"><div className="mail-sender"><span>{item.email || 'Без получателя'}</span><span className="mail-date">{item.date}</span></div><div className="mail-subject">{item.subject}</div><div className="mail-preview">{item.preview}</div></button>) : visibleRecords.map((mail) => <button key={mail.id} data-testid={`button-email-${mail.id}`} onClick={() => openMail(mail.id)} className={`mail-row ${!mail.read ? 'unread' : ''} ${selected.id === mail.id ? 'selected' : ''}`}><div className="mail-sender"><span>{mail.sender}</span><span className="mail-date">{mail.date}</span></div><div className="mail-subject">{mail.flagged && <Star size={11} className="mr-1 inline fill-[#c6a16b] text-[#c6a16b]" />}{mail.subject}</div><div className="mail-preview">{mail.preview}</div></button>)}
       {folder !== 'Черновики' && !visibleRecords.length && <div className="p-5 text-xs text-[#82908a]">В этой папке пока нет писем.</div>}
     </div>
-    {composeOpen ? <ComposeMail draft={draft} setDraft={setDraft} onSend={sendDraft} onSave={saveDraft} onCancel={() => setComposeOpen(false)} /> : <EmailReading email={selected} folder={selected.folder} notify={notify} onToggleFlag={() => setRecords((current) => current.map((item) => item.id === selected.id ? { ...item, flagged: !item.flagged } : item))} onMove={moveSelected} onTaskOpened={onTaskOpened} taskStatus={taskStatus} onSubmitTask={onSubmitTask} onTaskExpired={onTaskExpired} />}
+    {composeOpen ? <ComposeMail draft={draft} setDraft={setDraft} onSend={sendDraft} onSave={saveDraft} onCancel={() => setComposeOpen(false)} /> : <EmailReading email={selected} folder={selected.folder} notify={notify} onToggleFlag={() => setRecords((current) => current.map((item) => item.id === selected.id ? { ...item, flagged: !item.flagged } : item))} onMove={moveSelected} taskStatus={taskStatus} taskReply={taskReply} onSelectTaskReply={selectTaskReply} fileDownloaded={fileDownloaded} onFileDownloaded={onFileDownloaded} />}
   </div>;
 }
 
@@ -355,19 +503,62 @@ function ComposeMail({ draft, setDraft, onSend, onSave, onCancel }: { draft: { i
   return <form className="reading-pane compose-pane" onSubmit={(event) => { event.preventDefault(); onSend(); }}><div className="eyebrow !text-[9px]">НОВОЕ ПИСЬМО</div><h2 className="mt-3">Написать письмо</h2><label className="field-label mt-6">Кому<input data-testid="input-mail-to" required value={draft.to} onChange={(event) => setDraft({ ...draft, to: event.target.value })} className="form-input mt-1" /></label><label className="field-label mt-3">Тема<input data-testid="input-mail-subject" required value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} className="form-input mt-1" /></label><label className="field-label mt-3">Текст<textarea data-testid="textarea-mail-body" required value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} className="form-input mt-1 min-h-[180px]" /></label><div className="mt-5 flex gap-2"><button data-testid="button-send-mail" className="toolbar-button border border-[#b7cfc2] bg-[#dbeae1]" type="submit"><Send size={13} /> Отправить</button><button data-testid="button-save-draft" type="button" onClick={onSave} className="toolbar-button border border-[#d1ddd4]">Сохранить черновик</button><button data-testid="button-cancel-mail" type="button" onClick={onCancel} className="toolbar-button border border-[#d1ddd4]">Отмена</button></div></form>;
 }
 
-function EmailReading({ email, folder, notify, onToggleFlag, onMove, onTaskOpened, taskStatus, onSubmitTask, onTaskExpired }: { email: MailRecord; folder: MailFolder; notify: (message: string) => void; onToggleFlag: () => void; onMove: (folder: MailFolder) => void; onTaskOpened: () => void; taskStatus: TaskStatus; onSubmitTask: () => void; onTaskExpired: () => void }) {
-  const body = email.id === 'task' ? <><p>Доброе утро!</p><p>Рада, что ты пришел к нам в команду. Присоединяйся к первому проекту.</p><p>Сегодня через час жду тебя на встрече проектной команды, будем обсуждать создание ИИ-помощника для новых сотрудников компании.</p><p>Твоя задача — подготовить и представить свою концепцию помощника, которая поможет новым работникам быстрее адаптироваться и эффективнее решать рабочие задачи.</p><p>Перед встречей продумай свое предложение и подготовь краткое описание концепции. В нем обязательно отрази целевую аудиторию, проблемы и потребности пользователей, ключевые функции, необходимые данные и источники информации, ограничения и риски.</p><p>Через 30 минут напиши, как продвигается работа: все ли получается, есть ли вопросы или сложности. Через час жду тебя на встрече. Свое предложение пришли мне до начала обсуждения.</p><p>С уважением,<br />Марина Орлова<br />Руководитель проектной команды</p></> : email.id === 'survey' ? <><p>Коллеги, собрали результаты короткого опроса новых сотрудников за весенний поток.</p><p>Самые частые сложности в первые дни — найти нужную информацию (42%), понять, к кому обратиться с вопросом (31%) и разобраться с внутренними инструментами (19%). В свободных ответах чаще всего звучала просьба о едином «проводнике» по первым задачам.</p><div className="attachment-card"><FileText size={22} /><div><strong>new_employee_survey.pdf</strong><span>PDF · 2,4 МБ · результаты опроса</span></div><Download size={15} className="ml-auto text-[#668078]" /></div><p>Будем рады, если эти наблюдения пригодятся в твоей концепции.</p></> : email.id === 'data' ? <><p>Олег, привет. Оставляю в одном месте то, что доступно для работы над сегодняшней задачей.</p><h3>Источники</h3><p>• Опрос новых сотрудников — в письме от People team.<br />• Гайд по первым 30 дням — папка «Онбординг».<br />• Анонимизированные обращения в поддержку — таблица за март.</p><p>Не используй персональные данные сотрудников и не выноси внутренние материалы за пределы рабочего пространства.</p></> : email.id === 'security' ? <><p>Несколько важных напоминаний перед началом работы.</p><h3>Рабочие данные</h3><p>Используйте только корпоративное пространство. Не вставляйте имена, адреса и другие персональные данные в публичные AI-сервисы. Перед отправкой файла проверьте права доступа.</p><p>Если сомневаетесь — задайте вопрос IT Security или Марине. Безопасность здесь важнее скорости.</p></> : <><p>Привет!</p><p>{email.preview} Если появятся вопросы, напиши в соответствующий канал — команда на связи.</p><p>Хорошего рабочего дня,<br />Команда Changellenge &gt;&gt;</p></>;
-  return <article className="reading-pane"><div className="eyebrow !text-[9px]">{folder === 'inbox' ? 'ВХОДЯЩИЕ' : folder.toUpperCase()} / {email.id === 'task' ? 'ПРИОРИТЕТ' : 'СООБЩЕНИЕ'}</div><div className="flex items-start justify-between gap-3"><h2 className="mt-3">{email.subject}</h2><button data-testid="button-flag-email" onClick={onToggleFlag} className={`toolbar-button mt-2 ${email.flagged ? 'text-[#b18445]' : ''}`} aria-label="Пометить письмо"><Star size={14} className={email.flagged ? 'fill-current' : ''} /></button></div><div className="reading-meta flex items-center gap-2"><span className="person-avatar">{email.icon}</span><span><strong className="text-[#4f615e]">{email.sender}</strong> &lt;{email.email}&gt; · сегодня, {email.date}</span></div><div className="reading-body mt-7">{body}</div>{email.id === 'task' && <TaskForm status={taskStatus} onTaskOpened={onTaskOpened} onSubmitTask={onSubmitTask} onTaskExpired={onTaskExpired} />}{email.folder === 'sent' ? null : <div className="mt-8 flex flex-wrap gap-2">{folder === 'trash' ? <button data-testid="button-restore-email" onClick={() => onMove('inbox')} className="toolbar-button border border-[#d1ddd4]"><RotateCcw size={13} /> Восстановить</button> : <><button data-testid="button-archive-email" onClick={() => onMove('archive')} className="toolbar-button border border-[#d1ddd4]"><Archive size={13} /> Архивировать</button><button data-testid="button-delete-email" onClick={() => onMove('trash')} className="toolbar-button border border-[#d1ddd4] text-[#a26459]"><Trash2 size={13} /> Удалить</button></>}</div>}</article>;
+function EmailReading({ email, folder, notify, onToggleFlag, onMove, taskStatus, taskReply, onSelectTaskReply, fileDownloaded, onFileDownloaded }: { email: MailRecord; folder: MailFolder; notify: (message: string) => void; onToggleFlag: () => void; onMove: (folder: MailFolder) => void; taskStatus: TaskStatus; taskReply: number | null; onSelectTaskReply: (index: number) => void; fileDownloaded: boolean; onFileDownloaded: () => void }) {
+  const body = email.id === 'task' ? <>
+    <p>Доброе утро!</p>
+    <p>Рада, что ты пришел к нам в команду. Присоединяйся к первому проекту. Сегодня через час жду тебя на встрече проектной команды — будем обсуждать создание ИИ-помощника для новых сотрудников компании.</p>
+    <p>Твоя задача — подготовить и представить концепцию помощника, которая поможет новым работникам быстрее адаптироваться и эффективнее решать рабочие задачи.</p>
+    <p>Перед встречей продумай предложение и подготовь краткое описание концепции. В нем обязательно отрази целевую аудиторию, проблемы и потребности пользователей, ключевые функции, необходимые данные и источники информации, ограничения и риски.</p>
+    <p>Через 30 минут напиши, как продвигается работа. Через час жду тебя на встрече. Свое предложение пришли мне до начала обсуждения.</p>
+    <p>С уважением,<br />Марина Орлова<br />Руководитель проектной команды</p>
+  </> : email.id === 'task-followup' ? <>
+    <p>Спасибо за ответ!</p>
+    <p>Чтобы на встрече быстро сверить подходы, заполни приложенный шаблон плана работы. Выбери необходимые действия, укажи их последовательность и время на каждый шаг.</p>
+    <p>Скачай файл и открой его в Word внутри рабочей среды. Когда закончишь, отправь документ через <strong>«Поделиться» → «Почта» → «Марина Орлова»</strong>.</p>
+    <div className={`attachment-card task-attachment ${fileDownloaded ? 'downloaded' : ''}`}>
+      <FileText size={24} />
+      <div><strong>План_работы_к_встрече.docx</strong><span>DOCX · 34 КБ · форма задания 1</span></div>
+      <button data-testid="button-download-task-file" type="button" disabled={fileDownloaded} onClick={() => { onFileDownloaded(); notify('Файл скачан. Откройте его в Word'); }} className="attachment-action"><Download size={14} /> {fileDownloaded ? 'Скачано' : 'Скачать'}</button>
+    </div>
+    {fileDownloaded && <div className="task-hint"><Info size={15} /><span><strong>Следующий шаг:</strong> откройте Word на рабочем столе и выберите файл «План работы к встрече».</span></div>}
+    <p>Жду заполненный план до начала встречи.<br />Марина</p>
+  </> : email.id === 'task-submission' ? <>
+    <p>Марина, направляю заполненный план к встрече.</p>
+    <div className="attachment-card downloaded"><FileText size={22} /><div><strong>План_работы_к_встрече.docx</strong><span>DOCX · заполненная форма задания 1</span></div><Check size={15} className="ml-auto" /></div>
+  </> : email.id === 'survey' ? <>
+    <p>Коллеги, собрали результаты короткого опроса новых сотрудников за весенний поток.</p>
+    <p>Самые частые сложности в первые дни — найти нужную информацию (42%), понять, к кому обратиться с вопросом (31%) и разобраться с внутренними инструментами (19%). В свободных ответах чаще всего звучала просьба о едином «проводнике» по первым задачам.</p>
+    <div className="attachment-card"><FileText size={22} /><div><strong>new_employee_survey.pdf</strong><span>PDF · 2,4 МБ · результаты опроса</span></div><Download size={15} className="ml-auto text-[#668078]" /></div>
+    <p>Будем рады, если эти наблюдения пригодятся в твоей концепции.</p>
+  </> : email.id === 'data' ? <>
+    <p>Олег, привет. Оставляю в одном месте то, что доступно для работы над сегодняшней задачей.</p><h3>Источники</h3><p>• Опрос новых сотрудников — в письме от People team.<br />• Гайд по первым 30 дням — папка «Онбординг».<br />• Анонимизированные обращения в поддержку — таблица за март.</p><p>Не используй персональные данные сотрудников и не выноси внутренние материалы за пределы рабочего пространства.</p>
+  </> : email.id === 'security' ? <>
+    <p>Несколько важных напоминаний перед началом работы.</p><h3>Рабочие данные</h3><p>Используйте только корпоративное пространство. Не вставляйте имена, адреса и другие персональные данные в публичные AI-сервисы. Перед отправкой файла проверьте права доступа.</p><p>Если сомневаетесь — задайте вопрос IT Security или Марине. Безопасность здесь важнее скорости.</p>
+  </> : <><p>Привет!</p><p>{email.preview} Если появятся вопросы, напиши в соответствующий канал — команда на связи.</p><p>Хорошего рабочего дня,<br />Команда Changellenge &gt;&gt;</p></>;
+  return <article className="reading-pane">
+    <div className="eyebrow !text-[9px]">{folder === 'inbox' ? 'ВХОДЯЩИЕ' : folder.toUpperCase()} / {email.id === 'task' || email.id === 'task-followup' ? 'ПРИОРИТЕТ' : 'СООБЩЕНИЕ'}</div>
+    <div className="flex items-start justify-between gap-3"><h2 className="mt-3">{email.subject}</h2><button data-testid="button-flag-email" onClick={onToggleFlag} className={`toolbar-button mt-2 ${email.flagged ? 'text-[#b18445]' : ''}`} aria-label="Пометить письмо"><Star size={14} className={email.flagged ? 'fill-current' : ''} /></button></div>
+    <div className="reading-meta flex items-center gap-2"><span className="person-avatar">{email.icon}</span><span><strong className="text-[#4f615e]">{email.sender}</strong> &lt;{email.email}&gt; · сегодня, {email.date}</span></div>
+    <div className="reading-body mt-7">{body}</div>
+    {email.id === 'task' && <section className="reply-choice-panel" data-testid="panel-task-replies">
+      <div className="task-overline">ВАШ ОТВЕТ</div>
+      <h3>Выберите один из четырех вариантов</h3>
+      {taskReply === null ? <div className="reply-choice-grid">{taskReplyOptions.map((option, index) => <button data-testid={`button-task-reply-${index}`} key={option.label} type="button" disabled={taskStatus === 'completed' || taskStatus === 'expired'} onClick={() => onSelectTaskReply(index)} className="reply-choice"><span>{option.label}</span><p>{option.text}</p></button>)}</div> : <div className="reply-sent"><CheckCircle2 size={17} /><span><strong>Ответ {taskReplyOptions[taskReply]?.label} отправлен</strong><small>{taskReplyOptions[taskReply]?.text}</small></span></div>}
+    </section>}
+    {email.folder === 'sent' ? null : <div className="mt-8 flex flex-wrap gap-2">{folder === 'trash' ? <button data-testid="button-restore-email" onClick={() => onMove('inbox')} className="toolbar-button border border-[#d1ddd4]"><RotateCcw size={13} /> Восстановить</button> : <><button data-testid="button-archive-email" onClick={() => onMove('archive')} className="toolbar-button border border-[#d1ddd4]"><Archive size={13} /> Архивировать</button><button data-testid="button-delete-email" onClick={() => onMove('trash')} className="toolbar-button border border-[#d1ddd4] text-[#a26459]"><Trash2 size={13} /> Удалить</button></>}</div>}
+  </article>;
 }
 
-function TaskForm({ status, onTaskOpened, onSubmitTask, onTaskExpired }: { status: TaskStatus; onTaskOpened: () => void; onSubmitTask: () => void; onTaskExpired: () => void }) {
+function TaskForm({ status, onValidityChange }: { status: TaskStatus; onValidityChange: (ready: boolean) => void }) {
   const [checks, setChecks] = useState<Record<string, boolean>>(() => {
     const selected = storage.get<string[]>('task1SelectedActions', []);
     return selected.length ? Object.fromEntries(selected.map((action) => [action, true])) : storage.get('workday-task-checks', {});
   });
   const [orders, setOrders] = useState<Record<string, string>>(() => storage.get('task1Order', storage.get('workday-task-orders', {})));
   const [minutes, setMinutes] = useState<Record<string, string>>(() => storage.get('task1EstimatedTimes', storage.get('workday-task-minutes', {})));
-  useEffect(() => { if (status === 'expired') onTaskExpired(); }, [status, onTaskExpired]);
+  const selectedActions = Object.keys(checks).filter((action) => checks[action]);
+  const ready = selectedActions.some((action) => Boolean(orders[action]?.trim() && minutes[action]?.trim()));
+  useEffect(() => { onValidityChange(Boolean(ready)); }, [ready, onValidityChange]);
   const updateCheck = (action: string, checked: boolean) => {
     const next = { ...checks, [action]: checked };
     setChecks(next);
@@ -377,24 +568,40 @@ function TaskForm({ status, onTaskOpened, onSubmitTask, onTaskExpired }: { statu
   const updateOrder = (action: string, value: string) => { const next = { ...orders, [action]: value }; setOrders(next); storage.set('task1Order', next); storage.set('workday-task-orders', next); };
   const updateMinutes = (action: string, value: string) => { const next = { ...minutes, [action]: value }; setMinutes(next); storage.set('task1EstimatedTimes', next); storage.set('workday-task-minutes', next); };
   const locked = status !== 'active';
-  return <section className="task-inline mt-8 border-t border-[#d8e1d8] pt-6">
+  return <section className="task-inline">
     {status === 'completed' && <div className="task-complete-banner"><CheckCircle2 size={16} /> <span><strong>Задание выполнено</strong><small>Ваш ответ отправлен руководителю.</small></span></div>}
     {status === 'expired' && <div className="task-expired-banner"><Info size={16} /> Время на выполнение задания закончилось. Ваш текущий ответ сохранен автоматически.</div>}
-    {status === 'not-started' && <div className="task-expired-banner">Откройте письмо, чтобы начать отсчет времени на задание.</div>}
     <div className="task-overline mt-4">ЗАДАНИЕ 1</div>
     <h3 className="mt-2">План работы на 1 час</h3>
-    <p className="mt-2 max-w-[700px] text-[11px] leading-5 text-[#61726b]">За ближайшие 7 минут составьте план работы на 1 час по подготовке концепции ИИ-помощника для новичков. Выберите действия, расположите их в нужной последовательности, оцените время и отправьте ответ руководителю.</p>
+    <p className="mt-2 max-w-[700px] text-[11px] leading-5 text-[#61726b]">Выберите необходимые действия, расположите их в нужной последовательности и укажите время в минутах. После заполнения отправьте файл Марине через кнопку «Поделиться».</p>
     <div className="task-table-wrap"><table className="task-table"><thead><tr><th>Действие</th><th>Выбрать</th><th>Последовательность</th><th>Время, мин</th></tr></thead><tbody>{taskActions.map((action, index) => <tr key={action}><td>{action}</td><td><input data-testid={`checkbox-task-action-${index}`} type="checkbox" checked={Boolean(checks[action])} disabled={locked} onChange={(event) => updateCheck(action, event.target.checked)} aria-label={`Выбрать: ${action}`} /></td><td><input data-testid={`input-task-order-${index}`} type="number" min="1" max="20" value={orders[action] || ''} disabled={locked || !checks[action]} onChange={(event) => updateOrder(action, event.target.value)} aria-label={`Последовательность: ${action}`} /></td><td><input data-testid={`input-task-minutes-${index}`} type="number" min="1" max="60" value={minutes[action] || ''} disabled={locked || !checks[action]} onChange={(event) => updateMinutes(action, event.target.value)} aria-label={`Время: ${action}`} /></td></tr>)}</tbody></table></div>
-    {!locked && <button data-testid="button-submit-task" type="button" onClick={() => { if (window.confirm('Отправить ответ? После отправки изменить его будет нельзя.')) { storage.set('task1SelectedActions', Object.keys(checks).filter((key) => checks[key])); storage.set('task1Order', orders); storage.set('task1EstimatedTimes', minutes); onSubmitTask(); } }} className="task-submit mt-4">Отправить ответ <Send size={13} className="ml-1 inline" /></button>}
+    {!locked && <div className={`task-form-readiness ${ready ? 'ready' : ''}`}>{ready ? <><CheckCircle2 size={14} /> Форма готова — поделитесь документом с Мариной.</> : <><Info size={14} /> Выберите хотя бы одно действие и заполните для него порядок и время.</>}</div>}
   </section>;
 }
 
-function WordApp({ notify }: { notify: (message: string) => void }) {
-  const [text, setText] = useState(() => storage.get('workday-word', 'Концепция AI-помощника для новых сотрудников\n\nЦель\nСделать первые дни понятнее: помочь сотруднику быстро найти нужную информацию, понять следующий шаг и обратиться к правильному человеку.\n\nПервые наблюдения\n'));
-  const [saved, setSaved] = useState(true);
-  useEffect(() => { setSaved(false); const timeout = window.setTimeout(() => { storage.set('workday-word', text); setSaved(true); }, 500); return () => window.clearTimeout(timeout); }, [text]);
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  return <div className="flex h-full flex-col"><div className="window-toolbar"><button data-testid="button-word-undo" onClick={() => notify('История изменений пока недоступна')} className="toolbar-button"><RotateCcw size={13} /></button><button data-testid="button-word-redo" onClick={() => notify('История изменений пока недоступна')} className="toolbar-button"><ArrowRight size={13} /></button><span className="toolbar-divider" /><button data-testid="button-word-bold" onClick={() => notify('Выделите текст, чтобы применить форматирование')} className="toolbar-button font-bold">B</button><button data-testid="button-word-italic" onClick={() => notify('Выделите текст, чтобы применить форматирование')} className="toolbar-button italic">I</button><button data-testid="button-word-list" onClick={() => setText((value) => `${value}\n• `)} className="toolbar-button">Список</button><span className="toolbar-divider" /><button data-testid="button-word-share" onClick={() => notify('Функция будет доступна в следующей версии')} className="toolbar-button"><UsersRound size={13} /> Поделиться</button><span className="ml-auto text-[10px] text-[#80908a]">{saved ? 'Сохранено локально' : 'Сохранение...'}</span></div><div className="word-wrap"><div className="word-page"><textarea data-testid="textarea-word-document" aria-label="Текст документа" value={text} onChange={(event) => setText(event.target.value)} /></div></div><div className="word-status"><span>Страница 1 из 1</span><span>{words} слов · русский</span></div></div>;
+function WordApp({ notify, fileDownloaded, documentOpened, onDocumentOpened, taskStatus, onSubmitTask }: { notify: (message: string) => void; fileDownloaded: boolean; documentOpened: boolean; onDocumentOpened: () => void; taskStatus: TaskStatus; onSubmitTask: () => void }) {
+  const [formReady, setFormReady] = useState(false);
+  const [shareStep, setShareStep] = useState<'closed' | 'channel' | 'recipient'>('closed');
+  const openDocument = () => { onDocumentOpened(); notify('Форма задания 1 открыта'); };
+  const openShare = () => {
+    if (taskStatus === 'completed') { notify('Документ уже отправлен Марине'); return; }
+    if (!formReady) { notify('Сначала заполните порядок и время хотя бы для одного действия'); return; }
+    setShareStep('channel');
+  };
+  if (!fileDownloaded) return <div className="word-shell flex h-full flex-col">
+    <div className="window-toolbar"><button data-testid="button-word-open-file" disabled className="toolbar-button"><FolderOpen size={13} /> Открыть файл</button><span className="ml-auto text-[10px] text-[#80908a]">Нет открытых документов</span></div>
+    <div className="word-start"><div className="word-start-card"><span className="word-file-icon"><FileText size={28} /></span><div className="task-overline">WORD / ЗАДАНИЕ 1</div><h2>Сначала скачайте шаблон</h2><p>Откройте новое письмо Марины Орловой в Почте и скачайте файл «План работы к встрече». После этого он появится здесь.</p><div className="task-hint"><Info size={15} /><span>Подсказка: Почта → «Шаблон плана к встрече» → «Скачать».</span></div></div></div>
+  </div>;
+  if (!documentOpened) return <div className="word-shell flex h-full flex-col">
+    <div className="window-toolbar"><button data-testid="button-word-open-file" onClick={openDocument} className="toolbar-button"><FolderOpen size={13} /> Открыть файл</button><span className="ml-auto text-[10px] text-[#80908a]">1 недавний файл</span></div>
+    <div className="word-start"><div className="word-start-card"><span className="word-file-icon"><FileText size={28} /></span><div className="task-overline">СКАЧАННЫЕ ФАЙЛЫ</div><h2>План работы к встрече</h2><p>Шаблон от Марины готов к заполнению. Откройте его, выберите действия и укажите порядок и время.</p><button data-testid="button-open-task-document" type="button" onClick={openDocument} className="task-submit"><FolderOpen size={14} /> Открыть «План_работы_к_встрече.docx»</button></div></div>
+  </div>;
+  return <div className="word-shell flex h-full flex-col">
+    <div className="window-toolbar"><button data-testid="button-word-undo" onClick={() => notify('История изменений пока недоступна')} className="toolbar-button"><RotateCcw size={13} /></button><button data-testid="button-word-redo" onClick={() => notify('История изменений пока недоступна')} className="toolbar-button"><ArrowRight size={13} /></button><span className="toolbar-divider" /><FileText size={13} className="ml-1 text-[#39746a]" /><span className="word-document-name">План_работы_к_встрече.docx</span><span className="toolbar-divider" /><button data-testid="button-word-share" onClick={openShare} className="toolbar-button"><UsersRound size={13} /> Поделиться</button><span className="ml-auto text-[10px] text-[#80908a]">Сохранено локально</span></div>
+    {shareStep !== 'closed' && <div className="word-share-menu" data-testid="menu-word-share"><div className="word-share-head"><span>{shareStep === 'channel' ? 'Поделиться документом' : 'Отправить по почте'}</span><button data-testid="button-close-share" onClick={() => setShareStep('closed')} aria-label="Закрыть"><X size={13} /></button></div>{shareStep === 'channel' ? <div className="word-share-options"><button data-testid="button-share-via-mail" onClick={() => setShareStep('recipient')}><Mail size={17} /><span><strong>Почта</strong><small>Отправить файл коллеге</small></span><ArrowRight size={14} /></button><button disabled><FolderOpen size={17} /><span><strong>Скопировать ссылку</strong><small>Недоступно для этого файла</small></span></button></div> : <div className="word-recipient-list"><button data-testid="button-share-recipient-marina" onClick={() => { storage.set('task1SharedWith', 'Марина Орлова'); setShareStep('closed'); onSubmitTask(); }}><span className="person-avatar">МО</span><span><strong>Марина Орлова</strong><small>Руководитель проекта</small></span><Send size={14} /></button><button onClick={() => notify('Для завершения задания отправьте файл Марине')}><span className="person-avatar">ОВ</span><span><strong>Олег Власов</strong><small>Аналитика</small></span></button><button onClick={() => notify('Для завершения задания отправьте файл Марине')}><span className="person-avatar">ЕС</span><span><strong>Екатерина Соколова</strong><small>People team</small></span></button></div>}</div>}
+    <div className="word-wrap task-word-wrap"><div className="word-page task-doc-page"><div className="word-doc-heading"><div><span>CHANGELLENGE &gt;&gt; / ПЕРВЫЙ РАБОЧИЙ ДЕНЬ</span><h2>Форма ответа на задание 1</h2></div><span className="word-doc-badge">Шаблон Марины</span></div><TaskForm status={taskStatus} onValidityChange={setFormReady} /></div></div>
+    <div className="word-status"><span>Страница 1 из 1</span><span>{formReady ? 'Все обязательные поля заполнены' : 'Заполните порядок и время'}</span></div>
+  </div>;
 }
 
 type ChatMessage = { id: string; role: 'ai' | 'user'; text: string };
@@ -402,10 +609,16 @@ function AiApp() {
   const [messages, setMessages] = useState<ChatMessage[]>(() => storage.get('workday-ai', [{ id: 'welcome', role: 'ai', text: 'Привет. Я помогу разобраться с рабочими материалами и сформулировать первые идеи. С чего начнем?' }]));
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
+  const threadRef = useRef<HTMLDivElement>(null);
   useEffect(() => { storage.set('workday-ai', messages); }, [messages]);
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (!thread) return;
+    thread.scrollTo({ top: thread.scrollHeight, behavior: 'smooth' });
+  }, [messages, thinking]);
   const send = async () => { const clean = input.trim(); if (!clean || thinking) return; setInput(''); const previous = messages; setMessages((current) => [...current, { id: `u-${Date.now()}`, role: 'user', text: clean }]); setThinking(true); try { const response = await fetch('/api/ai/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: clean, history: previous.map((item) => ({ role: item.role === 'ai' ? 'assistant' : 'user', content: item.text })) }) }); const result = await response.json().catch(() => ({})); if (!response.ok) throw new Error(typeof result.message === 'string' ? result.message : 'Не удалось получить ответ AI-помощника.'); setMessages((current) => [...current, { id: `a-${Date.now()}`, role: 'ai', text: result.message }]); } catch (error) { setMessages((current) => [...current, { id: `e-${Date.now()}`, role: 'ai', text: error instanceof Error ? error.message : 'Не удалось получить ответ AI-помощника.' }]); } finally { setThinking(false); } };
   const newDialog = () => setMessages([{ id: `welcome-${Date.now()}`, role: 'ai', text: 'Новый диалог готов. Сформулируйте вопрос по материалам рабочего дня.' }]);
-  return <div className="ai-shell"><aside className="ai-sidebar"><button data-testid="button-ai-new-dialog" onClick={newDialog} className="ai-new-dialog"><Plus size={13} /> Новый диалог</button><div className="ai-history-label">История</div><button data-testid="button-ai-history-current" onClick={() => setMessages((current) => current)} className="ai-history-item selected"><Sparkles size={12} /><span>Текущий диалог</span></button><button data-testid="button-ai-history-concept" onClick={newDialog} className="ai-history-item"><FileText size={12} /><span>Концепция помощника</span></button></aside><div className="ai-layout"><div className="ai-head"><span className="ai-orb"><Sparkles size={17} /></span><div><strong className="block text-[12px] text-[#35544f]">AI-помощник</strong><span className="text-[10px] text-[#7d8b83]">внутренний прототип · отвечает по материалам среды</span></div><span className="ml-auto flex items-center gap-1 font-mono text-[9px] text-[#6c9588]"><span className="h-1.5 w-1.5 rounded-full bg-[#6caa88]" /> онлайн</span></div><div className="ai-thread">{messages.map((message) => <div data-testid={`message-ai-${message.id}`} key={message.id} className={`chat-bubble ${message.role}`}>{message.text}</div>)}{thinking && <div className="chat-bubble ai text-[#82928b]">Собираю мысль...</div>}</div><div className="chat-input"><input data-testid="input-ai-message" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }} placeholder="Напишите вопрос или мысль" /><button data-testid="button-send-ai" onClick={send} className="send-button" aria-label="Отправить"><Send size={14} /></button></div></div></div>;
+  return <div className="ai-shell"><aside className="ai-sidebar"><button data-testid="button-ai-new-dialog" onClick={newDialog} className="ai-new-dialog"><Plus size={13} /> Новый диалог</button><div className="ai-history-label">История</div><button data-testid="button-ai-history-current" onClick={() => setMessages((current) => current)} className="ai-history-item selected"><Sparkles size={12} /><span>Текущий диалог</span></button><button data-testid="button-ai-history-concept" onClick={newDialog} className="ai-history-item"><FileText size={12} /><span>Концепция помощника</span></button></aside><div className="ai-layout"><div className="ai-head"><span className="ai-orb"><Sparkles size={17} /></span><div><strong className="block text-[12px] text-[#35544f]">AI-помощник</strong><span className="text-[10px] text-[#7d8b83]">внутренний прототип · отвечает по материалам среды</span></div><span className="ml-auto flex items-center gap-1 font-mono text-[9px] text-[#6c9588]"><span className="h-1.5 w-1.5 rounded-full bg-[#6caa88]" /> онлайн</span></div><div ref={threadRef} data-testid="ai-message-list" className="ai-thread" aria-live="polite">{messages.map((message) => <div data-testid={`message-ai-${message.id}`} key={message.id} className={`chat-bubble ${message.role}`}>{message.text}</div>)}{thinking && <div className="chat-bubble ai text-[#82928b]">Собираю мысль...</div>}</div><div className="chat-input"><input data-testid="input-ai-message" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') send(); }} placeholder="Напишите вопрос или мысль" /><button data-testid="button-send-ai" onClick={send} className="send-button" aria-label="Отправить"><Send size={14} /></button></div></div></div>;
 }
 
 type MessengerMessage = { id: string; chat: string; sender: 'me' | 'them'; text: string };
@@ -431,7 +644,7 @@ function Workspace() {
   const [active, setActive] = useState<AppId | null>(null);
   const [selectedMail, setSelectedMail] = useState('task');
   const [welcome, setWelcome] = useState(() => !storage.get('workday-welcome-seen', false));
-  const [taskToast, setTaskToast] = useState(false);
+  const [mailToast, setMailToast] = useState<'task' | 'followup' | null>(null);
   const [launcher, setLauncher] = useState(false);
   const [notice, setNotice] = useState('');
   const [simulationStartedAt] = useState(() => {
@@ -443,6 +656,9 @@ function Workspace() {
   });
   const [taskStartedAt, setTaskStartedAt] = useState<number | null>(() => storage.get<number | null>('task1StartedAt', null));
   const [taskStatus, setTaskStatus] = useState<TaskStatus>(() => storage.get<TaskStatus>('task1Status', 'not-started'));
+  const [taskReplySelected, setTaskReplySelected] = useState(() => storage.get<number | null>('task1ReplyChoice', null) !== null);
+  const [taskFileDownloaded, setTaskFileDownloaded] = useState(() => storage.get('task1FileDownloaded', false));
+  const [taskDocumentOpened, setTaskDocumentOpened] = useState(() => storage.get('task1DocumentOpened', false));
   const [totalSeconds, setTotalSeconds] = useState(() => Math.max(0, Math.ceil((simulationStartedAt + 45 * 60 * 1000 - Date.now()) / 1000)));
   const [taskSeconds, setTaskSeconds] = useState(() => taskStartedAt && taskStatus === 'active' ? Math.max(0, Math.ceil((taskStartedAt + 7 * 60 * 1000 - Date.now()) / 1000)) : 0);
   const [completedTasks, setCompletedTasks] = useState(() => storage.get<number>('completedTasks', taskStatus === 'completed' || taskStatus === 'expired' ? 1 : 0));
@@ -471,7 +687,11 @@ function Workspace() {
   }, [simulationStartedAt, taskStartedAt, taskStatus]);
   useEffect(() => { if (!launcher) return; const onDown = (event: MouseEvent) => { if (!launcherRef.current?.contains(event.target as Node) && !startRef.current?.contains(event.target as Node)) setLauncher(false); }; document.addEventListener('mousedown', onDown); return () => document.removeEventListener('mousedown', onDown); }, [launcher]);
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 2700); return () => window.clearTimeout(timer); }, [notice]);
-  useEffect(() => { const timer = window.setTimeout(() => setTaskToast(true), 2400); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => {
+    if (taskReplySelected) return;
+    const timer = window.setTimeout(() => setMailToast('task'), 2400);
+    return () => window.clearTimeout(timer);
+  }, [taskReplySelected]);
   const userInitials = `${profile.firstName?.[0] || 'А'}${profile.lastName?.[0] || 'С'}`.toUpperCase();
   const focus = (id: AppId) => { setActive(id); setWindows((current) => { const highest = Math.max(...Object.values(current).map((value) => value.z), 8); return { ...current, [id]: { ...current[id], visible: true, minimized: false, z: highest + 1 } }; }); };
   const openApp = (id: AppId) => { focus(id); setLauncher(false); };
@@ -495,7 +715,7 @@ function Workspace() {
     setTaskStatus('completed');
     setCompletedTasks(1);
     setTaskSeconds(0);
-    notify('Ответ отправлен');
+    notify('Файл отправлен Марине. Задание 1 завершено');
   };
   const handleTaskExpired = () => {
     storage.set('task1Status', 'expired');
@@ -505,28 +725,62 @@ function Workspace() {
     setTaskSeconds(0);
     notify('Время на задание 1 закончилось');
   };
-  const canFinish = completedTasks >= 5 || totalSeconds === 0;
+  // The current MVP contains one complete task, so the day can finish as soon
+  // as that task is completed (or its timer expires).
+  const canFinish = completedTasks >= 1 || totalSeconds === 0;
   const finishSimulation = () => {
     if (!canFinish) return;
     storage.set('simulationFinished', true);
     setLocation('/finish');
   };
-  const openTaskFromToast = () => { setTaskToast(false); focus('mail'); setSelectedMail('task'); handleTaskOpened(); };
-  const openCurrentTask = () => { focus('mail'); setSelectedMail('task'); if (taskStatus === 'not-started') handleTaskOpened(); };
-  const appIcon = (id: AppId) => id === 'mail' ? <Mail size={14} /> : id === 'word' ? <FileText size={14} /> : id === 'ai' ? <Sparkles size={14} /> : <MessageCircle size={14} />;
-  const trayTime = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const handleReplySelected = () => {
+    setTaskReplySelected(true);
+    window.setTimeout(() => setMailToast('followup'), 700);
+  };
+  const handleFileDownloaded = () => {
+    storage.set('task1FileDownloaded', true);
+    setTaskFileDownloaded(true);
+  };
+  const handleDocumentOpened = () => {
+    storage.set('task1DocumentOpened', true);
+    setTaskDocumentOpened(true);
+  };
+  const openMailToast = () => {
+    const target = mailToast === 'followup' ? 'task-followup' : 'task';
+    setMailToast(null);
+    focus('mail');
+    setSelectedMail(target);
+    if (target === 'task') handleTaskOpened();
+  };
+  const openCurrentTask = () => {
+    if (!taskReplySelected) {
+      focus('mail');
+      setSelectedMail('task');
+      handleTaskOpened();
+      return;
+    }
+    if (!taskFileDownloaded) {
+      focus('mail');
+      setSelectedMail('task-followup');
+      return;
+    }
+    focus('word');
+  };
+  const appIcon = (id: AppId) => <XpAppIcon id={id} size={16} />;
+  const trayTime = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const trayDate = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
   const progress = Math.round((completedTasks / 5) * 100);
+  const currentTaskLabel = taskStatus === 'completed' ? '1 из 5 заданий выполнено' : !taskReplySelected ? 'Ответьте Марине в Почте' : !taskFileDownloaded ? 'Скачайте шаблон из нового письма' : !taskDocumentOpened ? 'Откройте шаблон в Word' : 'Заполните форму и поделитесь с Мариной';
   return <main className="desktop-stage">
     <div className="desktop-wallpaper" />
     <div className="desktop-topbar"><div className="flex items-center"><span className="mr-5 flex items-center gap-2 text-[#dce8df]"><AppMark small /><span className="hidden font-sans text-[10px] sm:inline">first workday</span></span><div className="metric"><span>ВРЕМЯ</span><strong>{formatTimer(totalSeconds)}</strong></div>{taskStartedAt && taskStatus === 'active' && <div className="metric"><span>ЗАДАНИЕ 1</span><strong>{formatTimer(taskSeconds)}</strong></div>}<div className="metric progress-metric"><span>ВЫПОЛНЕНО {completedTasks} ИЗ 5</span><strong>{progress}%</strong><i><b style={{ width: `${progress}%` }} /></i></div></div><div className="flex items-center gap-3"><span className="hidden text-[#aec2b9] sm:inline">Среда, первый день</span><span className="user-avatar !h-6 !w-6 !bg-[#d19b66] !text-[8px]">{userInitials}</span></div></div>
-    <div className="desktop-icons"><DesktopIcon label="Почта" icon={<Mail size={24} />} onClick={() => openApp('mail')} /><DesktopIcon label="Word" icon={<FileText size={24} />} onClick={() => openApp('word')} /><DesktopIcon label="AI-помощник" icon={<Sparkles size={24} />} onClick={() => openApp('ai')} /><DesktopIcon label="Мессенджер" icon={<MessageCircle size={24} />} onClick={() => openApp('messenger')} /></div>
-    <button data-testid="button-current-task" onClick={openCurrentTask} className="current-task-chip"><span className="current-task-icon"><CheckCircle2 size={15} /></span><span><small>{completedTasks ? 'Задание 1 выполнено' : 'Текущее задание'}</small><strong>{completedTasks ? '1 из 5 заданий выполнено' : `Задание 1 · ${taskStartedAt ? formatTimer(taskSeconds) : 'Открыть задание'}`}</strong></span><ArrowRight size={14} /></button>
-    {(Object.keys(windows) as AppId[]).map((id) => <WindowFrame key={id} id={id} title={appLabels[id]} icon={appIcon(id)} state={windows[id]} active={active === id} onFocus={() => focus(id)} onClose={() => close(id)} onMinimize={() => minimize(id)} onMaximize={() => maximize(id)}>{id === 'mail' && <MailApp selectedId={selectedMail} setSelectedId={setSelectedMail} notify={notify} onTaskOpened={handleTaskOpened} taskStatus={taskStatus} onSubmitTask={handleTaskSubmitted} onTaskExpired={handleTaskExpired} />}{id === 'word' && <WordApp notify={notify} />}{id === 'ai' && <AiApp />}{id === 'messenger' && <MessengerApp />}</WindowFrame>)}
-    {taskToast && <div className="task-toast"><button data-testid="button-task-toast" onClick={openTaskFromToast}><span className="toast-kicker">Новое уведомление · 09:12</span><strong>Марина Орлова</strong><span>Первая задача · откройте, чтобы начать</span></button><button data-testid="button-dismiss-task-toast" onClick={() => setTaskToast(false)} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}
+    <div className="desktop-icons"><DesktopIcon label="Почта" icon={<XpAppIcon id="mail" size={46} />} onClick={() => openApp('mail')} /><DesktopIcon label="Word" icon={<XpAppIcon id="word" size={46} />} onClick={() => openApp('word')} /><DesktopIcon label="AI-помощник" icon={<XpAppIcon id="ai" size={46} />} onClick={() => openApp('ai')} /><DesktopIcon label="Мессенджер" icon={<XpAppIcon id="messenger" size={46} />} onClick={() => openApp('messenger')} /></div>
+    <button data-testid="button-current-task" onClick={openCurrentTask} className="current-task-chip"><span className="current-task-icon"><CheckCircle2 size={15} /></span><span><small>{completedTasks ? 'Задание 1 выполнено' : 'Текущее задание'}</small><strong>{currentTaskLabel}</strong></span><ArrowRight size={14} /></button>
+    {(Object.keys(windows) as AppId[]).map((id) => <WindowFrame key={id} id={id} title={appLabels[id]} icon={appIcon(id)} state={windows[id]} active={active === id} onFocus={() => focus(id)} onClose={() => close(id)} onMinimize={() => minimize(id)} onMaximize={() => maximize(id)}>{id === 'mail' && <MailApp selectedId={selectedMail} setSelectedId={setSelectedMail} notify={notify} onTaskOpened={handleTaskOpened} taskStatus={taskStatus} onReplySelected={handleReplySelected} fileDownloaded={taskFileDownloaded} onFileDownloaded={handleFileDownloaded} />}{id === 'word' && <WordApp notify={notify} fileDownloaded={taskFileDownloaded} documentOpened={taskDocumentOpened} onDocumentOpened={handleDocumentOpened} taskStatus={taskStatus} onSubmitTask={handleTaskSubmitted} />}{id === 'ai' && <AiApp />}{id === 'messenger' && <MessengerApp />}</WindowFrame>)}
+    {mailToast && <div className="task-toast"><button data-testid="button-task-toast" onClick={openMailToast}><span className="toast-kicker">Новое письмо · {mailToast === 'followup' ? '09:14' : '09:12'}</span><strong>Марина Орлова</strong><span>{mailToast === 'followup' ? 'Шаблон плана к встрече · есть вложение' : 'Первая задача · выберите вариант ответа'}</span></button><button data-testid="button-dismiss-task-toast" onClick={() => setMailToast(null)} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}
     {launcher && <div ref={launcherRef} className="launcher"><div className="launcher-title">Рабочие приложения</div><div className="launcher-grid">{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-launcher-${id}`} key={id} onClick={() => openApp(id)} className="launcher-item">{appIcon(id)}{appLabels[id]}</button>)}</div></div>}
     {notice && <div data-testid="status-workspace-notice" className="animate-toast absolute bottom-[65px] left-1/2 z-[45] -translate-x-1/2 rounded-md border border-[#d6e5d9] bg-[#f0f6ef] px-4 py-2 text-[11px] font-semibold text-[#39746a] shadow-lg">{notice}</div>}
-    <div className="desktop-taskbar"><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}<button data-testid="button-finish-simulation" onClick={finishSimulation} disabled={!canFinish} className="taskbar-button disabled:cursor-not-allowed disabled:opacity-40"><CheckCircle2 size={14} /><span>Завершить день</span></button></div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><div>{trayTime}</div><div>{trayDate}.{now.getFullYear()}</div></div></div></div>
+    <div className="desktop-taskbar"><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}<button data-testid="button-finish-simulation" onClick={finishSimulation} disabled={!canFinish} className="taskbar-button disabled:cursor-not-allowed disabled:opacity-40"><CheckCircle2 size={14} /><span>Завершить день</span></button></div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><time data-testid="system-clock" dateTime={now.toISOString()}>{trayTime}</time><div>{trayDate}.{now.getFullYear()}</div></div></div></div>
     {welcome && <div className="welcome-backdrop"><div className="welcome-card"><div className="mark"><BriefcaseBusiness size={21} /></div><div className="eyebrow !text-[#71817a]">добро пожаловать в рабочую среду</div><h2 className="mt-3">Первый день начинается.</h2><p>Здесь уже открыты нужные инструменты. Начните с письма от Марины или откройте уведомление в правом нижнем углу.</p><button data-testid="button-close-welcome" onClick={() => { storage.set('workday-welcome-seen', true); setWelcome(false); }} className="button-primary w-full">Понятно, начать работу <ArrowRight size={15} /></button></div></div>}
     <div className="mobile-warning"><div className="mobile-warning-card"><MonitorIcon /><h2>Рабочее место требует экрана шире.</h2><p>Симуляция собрана как desktop-first среда. Откройте ее на экране шириной от 1100 px, чтобы все окна и панели были доступны.</p><button data-testid="button-mobile-back" onClick={() => setLocation('/instruction')} className="button-secondary mt-4 !border-[#76968c] !text-[#e6eee8]">Вернуться к инструкции</button></div></div>
   </main>;
@@ -544,7 +798,7 @@ function NotFound() {
 function Finish() {
   const profile = getProfile();
   const [, setLocation] = useLocation();
-  return <main className="landing-shell flex min-h-[100dvh] items-center justify-center px-6"><div className="paper-panel w-full max-w-[560px] p-8 text-center md:p-12"><AppMark /><div className="eyebrow mt-6">симуляция завершена</div><h1 className="serif mt-3 text-5xl leading-none text-[#294447]">Рабочий день<br /><em>позади.</em></h1><p className="mx-auto mt-5 max-w-[390px] text-sm leading-6 text-[#6e7b75]">Спасибо за прохождение симуляции{profile.firstName ? `, ${profile.firstName}` : ''}. Ваши ответы сохранены.</p><button data-testid="button-finish-home" onClick={() => setLocation('/')} className="button-primary mt-8">Вернуться на старт <ArrowRight size={15} /></button></div></main>;
+  return <main className="landing-shell finish-shell flex min-h-[100dvh] items-center justify-center px-6"><div className="paper-panel w-full max-w-[560px] p-8 text-center md:p-12"><AppMark /><div className="eyebrow mt-6">симуляция завершена</div><h1 className="serif mt-3 text-5xl leading-none text-[#294447]">Рабочий день<br /><em>позади.</em></h1><p className="mx-auto mt-5 max-w-[390px] text-sm leading-6 text-[#6e7b75]">Спасибо за прохождение симуляции{profile.firstName ? `, ${profile.firstName}` : ''}. Ваши ответы сохранены.</p><button data-testid="button-finish-home" onClick={() => setLocation('/')} className="button-primary mt-8">Вернуться на старт <ArrowRight size={15} /></button></div></main>;
 }
 
 function Router() {
