@@ -626,6 +626,36 @@ select {
   background: var(--xp-cream);
 }
 
+.messenger-layout {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.messenger-thread {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.messenger-messages {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #7f9db9 #ece9d8;
+  scrollbar-gutter: stable;
+}
+
+.messenger-messages:focus-visible {
+  outline: 1px dotted #0a246a;
+  outline-offset: -2px;
+}
+
 .mail-sidebar,
 .ai-sidebar,
 .chat-list {
@@ -826,6 +856,17 @@ input[type='checkbox'] {
 .reply-choice {
   color: #111;
   background: #fff;
+}
+
+.reply-choice > div {
+  min-width: 0;
+}
+
+.reply-choice strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #0a246a;
+  font-size: 10px;
 }
 
 .reply-choice:hover:not(:disabled) {
@@ -1054,5 +1095,255 @@ input[type='checkbox'] {
   .system-tray {
     padding-inline: 7px;
     min-width: 96px;
+  }
+}
+
+/* Multi-stage task flows */
+.task-transition-toast {
+  position: absolute;
+  right: 18px;
+  bottom: 68px;
+  z-index: 46;
+  min-width: 230px;
+  max-width: 360px;
+  padding: 10px 14px;
+  border: 1px solid #315a91;
+  border-radius: 3px;
+  color: #fff;
+  background: linear-gradient(#4c8ed5, #1d5fb8);
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, .35);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.task-priority-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.task-priority-list label,
+.document-check-grid label,
+.reply-check-group label,
+.survey-options.multi label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid #d0d0c7;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.task-priority-list label.selected {
+  order: -1;
+  border-color: #6e9ed3;
+  background: #eaf3ff;
+}
+
+.priority-index {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #aaa;
+  background: #f3f3ee;
+  font-size: 9px;
+}
+
+.document-choice-section,
+.reply-variable-block {
+  margin-top: 18px;
+  padding-top: 13px;
+  border-top: 1px solid #d8d8ce;
+}
+
+.document-choice-section h4,
+.reply-variable-block h3,
+.reply-check-group h3 {
+  margin: 0 0 10px;
+  color: #243e67;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.choice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice-chips.vertical {
+  display: grid;
+}
+
+.choice-chips button,
+.survey-options > button,
+.survey-scale button {
+  padding: 6px 9px;
+  border: 1px solid #7f9db9;
+  border-radius: 2px;
+  color: #1f3557;
+  background: linear-gradient(#fff, #ece9d8);
+  font-size: 10px;
+  text-align: left;
+}
+
+.choice-chips button:hover,
+.choice-chips button.selected,
+.survey-options > button:hover,
+.survey-scale button:hover {
+  border-color: #316ac5;
+  background: #dbeaff;
+}
+
+.choice-chips button.selected {
+  box-shadow: inset 0 0 0 1px #316ac5;
+  font-weight: 700;
+}
+
+.document-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.metric-input-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.metric-input-list label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px;
+  border-bottom: 1px solid #d8d8ce;
+  color: #333;
+  font-size: 11px;
+}
+
+.metric-input-list input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #7f9db9;
+  background: #fff;
+}
+
+.structured-reply {
+  min-width: 0;
+}
+
+.structured-reply textarea {
+  width: 100%;
+}
+
+.reply-prefill {
+  margin: 15px 0;
+  padding: 9px 0;
+  border-bottom: 1px solid #d8d8ce;
+  font-weight: 700;
+}
+
+.reply-check-group {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.messenger-choice-panel {
+  display: grid;
+  gap: 5px;
+  width: min(94%, 520px);
+  padding: 8px;
+  border: 1px solid #7f9db9;
+  background: #ece9d8;
+}
+
+.messenger-choice-panel > span {
+  padding: 2px 3px 5px;
+  color: #555;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.messenger-choice-panel button {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px;
+  border: 1px solid #aaa;
+  background: #fff;
+  color: #333;
+  font-size: 10px;
+  text-align: left;
+}
+
+.messenger-choice-panel button:hover {
+  border-color: #316ac5;
+  background: #eaf3ff;
+}
+
+.messenger-choice-panel button strong {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #fff;
+  background: #316ac5;
+}
+
+.survey-thread {
+  padding-bottom: 14px;
+}
+
+.survey-history {
+  display: contents;
+}
+
+.survey-options,
+.survey-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: min(94%, 560px);
+  padding: 8px;
+  border: 1px solid #b3b3a8;
+  background: #f5f4ea;
+}
+
+.survey-options.multi {
+  display: grid;
+}
+
+.survey-options.multi > button {
+  justify-self: start;
+}
+
+.survey-scale {
+  align-items: center;
+}
+
+.survey-scale input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.survey-scale strong {
+  min-width: 26px;
+  color: #0a246a;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .document-check-grid {
+    grid-template-columns: 1fr;
   }
 }
