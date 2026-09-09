@@ -1,0 +1,8 @@
+23:29:11 [vite] (client) Forced re-optimization of dependencies
+
+  VITE v7.3.6  ready in 520 ms
+
+  ➜  Local:   http://127.0.0.1:3000/
+  ➜  press h + enter to show help
+23:32:10 [vite] (client) hmr update /src/App.tsx, /src/index.css
+23:33:02 [vite] (client) hmr update /src/App.tsx, /src/index.css
