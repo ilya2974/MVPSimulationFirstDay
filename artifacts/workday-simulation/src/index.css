@@ -1,7 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
+
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-Light.otf') format('opentype'); font-style: normal; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-Regular.otf') format('opentype'); font-style: normal; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-Medium.otf') format('opentype'); font-style: normal; font-weight: 500 600; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-Bold.otf') format('opentype'); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-Extrabold.otf') format('opentype'); font-style: normal; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-Black.otf') format('opentype'); font-style: normal; font-weight: 900; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-LightItalic.otf') format('opentype'); font-style: italic; font-weight: 300; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-RegularItalic.otf') format('opentype'); font-style: italic; font-weight: 400; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-MediumItalic.otf') format('opentype'); font-style: italic; font-weight: 500 600; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-BoldItalic.otf') format('opentype'); font-style: italic; font-weight: 700; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-ExtraboldItalic.otf') format('opentype'); font-style: italic; font-weight: 800; font-display: swap; }
+@font-face { font-family: "Factor A"; src: url('/fonts/FactorA-BlackItalic.otf') format('opentype'); font-style: italic; font-weight: 900; font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
 
@@ -39,38 +51,44 @@
 }
 
 :root {
-  --background: 39 33% 95%;
-  --foreground: 218 28% 18%;
-  --border: 37 20% 84%;
-  --input: 37 20% 84%;
-  --ring: 169 33% 38%;
-  --card: 40 38% 98%;
-  --card-foreground: 218 28% 18%;
-  --card-border: 37 20% 84%;
-  --popover: 40 38% 98%;
-  --popover-foreground: 218 28% 18%;
-  --popover-border: 37 20% 84%;
-  --primary: 169 33% 32%;
-  --primary-foreground: 39 33% 97%;
-  --secondary: 37 23% 89%;
-  --secondary-foreground: 218 28% 18%;
-  --muted: 39 24% 91%;
-  --muted-foreground: 218 12% 47%;
-  --accent: 32 72% 57%;
-  --accent-foreground: 218 28% 18%;
-  --destructive: 3 58% 50%;
-  --destructive-foreground: 39 33% 97%;
-  --sidebar: 219 27% 20%;
-  --sidebar-foreground: 39 33% 94%;
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Instrument Serif', Georgia, serif;
-  --app-font-mono: 'IBM Plex Mono', monospace;
-  --radius: 0.7rem;
-  --shadow-sm: 0 2px 8px rgba(27, 38, 54, .08);
-  --shadow-md: 0 14px 36px rgba(27, 38, 54, .14);
-  --shadow-lg: 0 24px 60px rgba(27, 38, 54, .2);
-  --elevate-1: rgba(27, 38, 54, .04);
-  --elevate-2: rgba(27, 38, 54, .08);
+  --background: 0 0% 100%;
+  --foreground: 240 13% 8%;
+  --border: 0 0% 76%;
+  --input: 0 0% 76%;
+  --ring: 354 88% 48%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 13% 8%;
+  --card-border: 0 0% 76%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 13% 8%;
+  --popover-border: 0 0% 76%;
+  --primary: 354 88% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 240 13% 8%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 38%;
+  --accent: 354 88% 48%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 354 88% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar: 240 13% 8%;
+  --sidebar-foreground: 0 0% 100%;
+  --color-primary: #E71026;
+  --color-dark: #121217;
+  --color-white: #FFFFFF;
+  --color-light: #F1F1F1;
+  --color-gray: #C2C2C2;
+  /* Factor A is the Changellenge corporate typeface. */
+  --app-font-sans: "Factor A", Arial, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-font-serif: "Factor A", Arial, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-font-mono: "Factor A", Arial, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius: 0.75rem;
+  --shadow-sm: 0 2px 6px rgba(18, 18, 23, .06);
+  --shadow-md: 0 5px 12px rgba(18, 18, 23, .08);
+  --shadow-lg: 0 16px 36px rgba(18, 18, 23, .14);
+  --elevate-1: rgba(18, 18, 23, .04);
+  --elevate-2: rgba(18, 18, 23, .08);
 }
 
 .dark {
@@ -99,7 +117,7 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply font-sans antialiased bg-background text-foreground; margin: 0; }
+  body { @apply font-sans antialiased bg-background text-foreground; margin: 0; line-height: 1.2; }
   button, input, textarea, select { font: inherit; }
   button { cursor: pointer; }
 }
@@ -242,12 +260,14 @@
 .ai-head { flex: 0 0 auto; padding: 17px 20px; display: flex; align-items: center; gap: 11px; background: #eef2eb; border-bottom: 1px solid #dae0d8; }
 .ai-orb { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #eaf1e9; background: #39746a; animation: pulse-ring 3s ease-in-out infinite; }
 .ai-thread { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
-.chat-bubble { max-width: 74%; padding: 10px 13px; border-radius: 9px; font-size: 12px; line-height: 1.5; }
+.chat-bubble { flex: 0 0 auto; max-width: 74%; padding: 10px 13px; border-radius: 9px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .chat-bubble.ai { align-self: flex-start; color: #405352; background: #e5ede5; border-top-left-radius: 2px; }
 .chat-bubble.user { align-self: flex-end; color: #f1f6f0; background: #3a7069; border-top-right-radius: 2px; }
 .chat-input { flex: 0 0 auto; display: flex; gap: 7px; padding: 11px; border-top: 1px solid #d7ddd5; background: #edf0ea; }
 .chat-input input { flex: 1; min-width: 0; background: #fbfbf7; border: 1px solid #d1d9d1; border-radius: 6px; padding: 8px 10px; outline: 0; font-size: 12px; }
 .chat-input input:focus { border-color: #579085; box-shadow: 0 0 0 3px rgba(87,144,133,.12); }
+.chat-input textarea { flex: 1; min-width: 0; min-height: 34px; max-height: 180px; resize: none; overflow-y: auto; background: #fbfbf7; border: 1px solid #d1d9d1; border-radius: 6px; padding: 8px 10px; outline: 0; font-size: 12px; line-height: 1.45; }
+.chat-input textarea:focus { border-color: #579085; box-shadow: 0 0 0 3px rgba(87,144,133,.12); }
 .send-button { width: 35px; border: 0; border-radius: 6px; color: #f3f6ef; background: #39746a; display: grid; place-items: center; }
 .messenger-layout { height: 100%; display: grid; grid-template-columns: 155px 1fr; background: #f7f7f1; }
 .chat-list { border-right: 1px solid #d8ddd6; background: #edf0ea; padding: 9px 6px; }
@@ -257,7 +277,7 @@
 .messenger-thread { display: flex; flex-direction: column; min-width: 0; }
 .messenger-head { padding: 12px 15px; border-bottom: 1px solid #d8ddd6; color: #3d5250; font-size: 12px; font-weight: 600; }
 .messenger-messages { flex: 1; overflow: auto; padding: 17px; display: flex; flex-direction: column; gap: 8px; }
-.message-line { max-width: 74%; padding: 8px 11px; border-radius: 8px; background: #e5ece6; color: #4b5d59; font-size: 11px; line-height: 1.4; }
+.message-line { flex: 0 0 auto; max-width: 74%; padding: 8px 11px; border-radius: 8px; background: #e5ece6; color: #4b5d59; font-size: 11px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
 .message-line.self { align-self: flex-end; color: #f1f5ef; background: #3a7069; }
 .task-panel { height: 100%; overflow: auto; background: #f8f8f2; padding: 24px 28px; }
 .task-panel h2 { margin: 0; color: #29474a; font-size: 20px; }
@@ -268,6 +288,17 @@
 .task-table td { padding: 8px 7px; color: #52615e; border-bottom: 1px solid #e3e6df; }
 .task-table select, .task-table input[type=number] { width: 58px; padding: 5px; color: #445552; background: #fffef9; border: 1px solid #ced9d0; border-radius: 4px; font-size: 11px; }
 .task-table input[type=checkbox] { accent-color: #39746a; }
+.task-table tr.selected td { background: #edf6ef; }
+.task-brief { margin-top: 12px; padding: 13px 15px; border-left: 3px solid #c6a16b; background: #f5f3e9; color: #4f605b; font-size: 11px; line-height: 1.55; }
+.task-brief p { margin: 0 0 7px; }
+.task-brief strong { display: block; margin-bottom: 3px; color: #385550; }
+.task-brief ul { margin: 0 0 7px 17px; list-style: disc; }
+.task-brief-time { margin-bottom: 0 !important; color: #2f625a; font-weight: 700; }
+.pilot-contact-hint { display: flex; gap: 10px; margin-top: 18px; padding: 13px; border: 1px solid #c3d5ca; background: #eef5ef; color: #395a54; font-size: 11px; line-height: 1.45; }
+.pilot-contact-hint > svg { flex: 0 0 auto; margin-top: 2px; }
+.pilot-contact-hint strong { display: block; margin-bottom: 9px; }
+.pilot-contact-hint button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; padding: 8px 9px; border: 1px solid #b9cbc1; background: #fff; text-align: left; }
+.pilot-contact-hint button b { color: #2f6c62; font-size: 10px; }
 .task-submit { display: inline-flex; align-items: center; gap: 6px; margin-top: 17px; padding: 9px 14px; border: 0; border-radius: 6px; color: #f4f6ee; background: #39746a; font-size: 11px; font-weight: 600; }
 .task-submit:hover { background: #2e625b; }
 .task-notice { margin-top: 13px; padding: 9px 11px; border: 1px solid #c6dfcf; border-radius: 6px; color: #36705e; background: #e9f4eb; font-size: 11px; }
@@ -329,3 +360,212 @@
   .reading-pane { padding: 20px; }
   .word-page { padding: 40px; }
 }
+
+/* Changellenge application layer: shared surfaces, windows and work tools. */
+.landing-shell { background: var(--color-white); }
+.app-mark { color: var(--color-white); background: var(--color-dark); }
+.public-header-logo {
+  display: block;
+  width: clamp(128px, 13vw, 188px);
+  height: 24px;
+  object-fit: contain;
+  object-position: left center;
+}
+.serif { font-family: var(--app-font-sans); font-weight: 700; letter-spacing: -.035em; }
+.eyebrow, .field-label { color: #66666d; font-family: var(--app-font-mono); font-weight: 600; letter-spacing: .1em; }
+.button-primary, .task-submit { border-color: var(--color-primary); border-radius: var(--radius-sm); color: var(--color-white); background: var(--color-primary); box-shadow: none; }
+.button-primary:hover, .task-submit:hover { background: #c90d20; box-shadow: 0 5px 12px rgba(231, 16, 38, .2); transform: translateY(-1px); }
+.button-secondary { border-color: var(--color-dark); border-radius: var(--radius-sm); color: var(--color-dark); background: var(--color-white); }
+.button-secondary:hover { background: var(--color-light); transform: translateY(-1px); }
+.paper-panel { border-color: var(--color-gray); border-radius: var(--radius-md); background: var(--color-white); box-shadow: var(--shadow-md); backdrop-filter: none; }
+.form-input { border-color: var(--color-gray); border-radius: var(--radius-sm); background: var(--color-white); }
+.form-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(231, 16, 38, .12); }
+.progress-dots i.active { background: var(--color-primary); }
+
+.desktop-stage { color: var(--color-white); background: var(--color-dark); }
+.desktop-wallpaper { background: linear-gradient(135deg, #121217 0%, #25252c 58%, #3a3a42 100%); }
+.desktop-wallpaper:after { opacity: .18; background-image: linear-gradient(135deg, transparent 0 48%, rgba(231,16,38,.35) 48.2% 48.5%, transparent 48.7% 100%); background-size: 240px 240px; }
+.desktop-topbar, .desktop-taskbar { background: var(--color-dark); border-color: rgba(255,255,255,.22); backdrop-filter: none; }
+.desktop-topbar .metric strong, .taskbar-button.active, .taskbar-start { color: #ff6575; }
+.desktop-icon { border-radius: var(--radius-sm); }
+.desktop-icon:hover, .taskbar-button:hover, .taskbar-button.active { background: rgba(255,255,255,.11); border-color: rgba(255,255,255,.2); }
+.app-window { border-color: #a5a5a8; border-radius: var(--radius-md); background: var(--color-white); box-shadow: var(--shadow-lg); }
+.app-titlebar, .app-titlebar.active { color: var(--color-white); background: var(--color-dark); border-color: var(--color-dark); }
+.window-control { color: #f1f1f1; }
+.window-control:hover { color: var(--color-white); background: rgba(255,255,255,.16); }
+.window-control.close:hover { background: var(--color-primary); }
+.mail-sidebar, .ai-shell, .chat-list { background: var(--color-light); border-color: var(--color-gray); }
+.mail-list, .reading-pane, .ai-layout, .messenger-layout, .task-panel { background: var(--color-white); }
+.mail-folder, .mail-sender, .mail-subject, .reading-pane h2, .reading-body, .task-panel h2, .task-panel p { color: var(--color-dark); }
+.mail-folder:hover, .mail-folder.selected, .mail-row:hover, .mail-row.selected, .chat-person:hover, .chat-person.selected, .ai-history-item:hover, .ai-history-item.selected { color: var(--color-dark); background: #e4e4e5; }
+.mail-row, .mail-list-head, .reading-pane, .window-toolbar, .toolbar-divider, .messenger-head, .chat-list, .ai-sidebar { border-color: var(--color-gray); }
+.window-toolbar, .ai-head, .chat-input { background: var(--color-light); border-color: var(--color-gray); }
+.toolbar-button { color: var(--color-dark); border-radius: 6px; }
+.toolbar-button:hover { color: var(--color-primary); background: #e4e4e5; }
+.word-wrap, .word-start { background: #dedee0; }
+.word-page, .word-start-card, .word-share-menu { color: var(--color-dark); background: var(--color-white); border-color: var(--color-gray); box-shadow: var(--shadow-md); }
+.word-page textarea { color: var(--color-dark); font-family: var(--app-font-sans); }
+.word-file-icon, .ai-orb, .person-avatar, .user-avatar, .send-button { background: var(--color-primary); color: var(--color-white); }
+.ai-new-dialog { border-color: var(--color-dark); color: var(--color-dark); background: var(--color-white); border-radius: var(--radius-sm); }
+.ai-new-dialog:hover { color: var(--color-white); background: var(--color-dark); }
+.chat-bubble.ai, .message-line { color: var(--color-dark); background: var(--color-light); }
+.chat-bubble.user, .message-line.self { color: var(--color-white); background: var(--color-dark); }
+.chat-input input, .task-table select, .task-table input[type=number] { border-color: var(--color-gray); border-radius: 6px; background: var(--color-white); color: var(--color-dark); }
+.chat-input input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(231,16,38,.12); }
+.task-overline, .task-brief-time { color: var(--color-primary); }
+.task-table input[type=checkbox] { accent-color: var(--color-primary); }
+.task-table tr.selected td, .task-brief { background: #f8e7e9; }
+.task-brief { border-color: var(--color-primary); color: var(--color-dark); }
+.pilot-contact-hint, .reply-sent, .task-complete-banner, .task-form-readiness.ready { border-color: #f0aab3; color: var(--color-dark); background: #fff4f5; }
+.reply-choice { border-color: var(--color-gray); color: var(--color-dark); background: var(--color-white); border-radius: var(--radius-sm); }
+.reply-choice:hover:not(:disabled) { border-color: var(--color-primary); background: #fff4f5; }
+.reply-choice > span { background: var(--color-primary); }
+.task-expired-banner, .task-form-readiness { border-color: var(--color-gray); color: var(--color-dark); background: var(--color-light); }
+.welcome-backdrop { background: rgba(18,18,23,.65); backdrop-filter: none; }
+.welcome-card, .launcher { border-color: var(--color-gray); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+.welcome-card { color: var(--color-dark); background: var(--color-white); }
+.welcome-card .mark { background: var(--color-primary); }
+.welcome-card p { color: #5e5e65; }
+.task-toast, .launcher { background: var(--color-dark); }
+.task-toast { border-color: rgba(255,255,255,.25); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+.task-toast .toast-kicker { color: #ff6575; }
+.current-task-chip { border-color: rgba(255,255,255,.22); border-radius: var(--radius-sm); background: var(--color-dark); }
+.current-task-chip:hover { background: #25252c; }
+.current-task-icon { color: var(--color-white); background: var(--color-primary); }
+
+/* Product UI hierarchy: direct actions, compact metadata, structured work surfaces. */
+.desktop-topbar, .desktop-taskbar { font-family: var(--app-font-sans); }
+.desktop-topbar .metric span, .system-tray, .launcher-title, .task-toast .toast-kicker { font-family: var(--app-font-mono); letter-spacing: .08em; }
+.desktop-topbar .metric strong { font-weight: 700; }
+.desktop-taskbar { height: 72px; }
+.app-window.is-max { inset: 43px 10px 81px !important; }
+.taskbar-button { border-radius: 0; font-weight: 600; }
+.taskbar-button.active { box-shadow: inset 0 -3px 0 var(--color-primary); }
+.app-window { border-radius: 0; }
+.app-titlebar { height: 40px; min-height: 40px; padding-inline: 14px 8px; }
+.app-title { font-weight: 700; }
+.window-controls { gap: 4px; }
+.window-control { border-radius: 0; }
+.mail-layout, .ai-shell, .messenger-layout { grid-template-columns: 180px minmax(0, 1fr); }
+.mail-layout { grid-template-columns: 180px 290px minmax(300px, 1fr); }
+.mail-folder, .mail-row, .chat-person, .ai-history-item { border-radius: 0; }
+.mail-folder.selected, .mail-row.selected, .chat-person.selected, .ai-history-item.selected { box-shadow: inset 3px 0 0 var(--color-primary); }
+.mail-row.unread .mail-sender, .mail-row.unread .mail-subject { color: var(--color-dark); }
+.reading-pane { padding: 32px 36px; }
+.reading-pane h2, .task-panel h2 { font-size: 24px; font-weight: 750; letter-spacing: -.025em; }
+.reading-body { font-size: 13px; line-height: 1.7; }
+.window-toolbar { min-height: 44px; }
+.toolbar-button { font-weight: 600; }
+.word-page { max-width: 760px; padding: 64px 76px; }
+.word-doc-heading { border-color: var(--color-primary); }
+.ai-head, .messenger-head { min-height: 64px; }
+.chat-bubble, .message-line { border-radius: 8px; }
+.chat-bubble.user, .message-line.self { background: var(--color-primary); }
+.send-button { border-radius: 6px; }
+.task-panel { padding: 32px 36px; }
+.task-table th { color: #66666d; border-color: var(--color-gray); }
+.task-table td { border-color: #e2e2e3; }
+.task-submit { min-height: 38px; padding-inline: 16px; }
+.welcome-card { border-top: 0; border-radius: 0; box-shadow: 8px 8px 0 var(--color-primary); }
+.launcher { border-radius: 0; }
+
+/* Light desktop mode using the supplied Changellenge wallpaper and app icons. */
+.desktop-stage { color: var(--color-dark); background: #FFFFFF; }
+.desktop-wallpaper {
+  background: #FFFFFF url('/workday-assets/changellenge-desktop-wallpaper-v3.png') center / cover no-repeat;
+}
+.desktop-wallpaper:after { display: none; }
+.desktop-topbar,
+.desktop-taskbar {
+  color: var(--color-dark);
+  background: rgba(255,255,255,.94);
+  border-color: rgba(18,18,23,.14);
+  box-shadow: 0 1px 0 rgba(18,18,23,.04);
+}
+.desktop-topbar .metric { border-color: rgba(18,18,23,.13); }
+.desktop-topbar .metric strong,
+.taskbar-button.active,
+.taskbar-start { color: var(--color-primary); }
+.desktop-topbar [class*="text-[#dce8df]"],
+.desktop-topbar [class*="text-[#aec2b9]"],
+.system-tray,
+.system-time { color: #626269 !important; }
+.desktop-icon {
+  width: 94px;
+  height: auto;
+  display: grid;
+  grid-template-rows: 46px 18px;
+  place-items: center;
+  padding: 2px 4px 3px;
+  color: var(--color-dark);
+  border-radius: 10px;
+  text-shadow: none;
+  font-weight: 650;
+}
+.desktop-icon .xp-app-icon {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 0;
+  filter: drop-shadow(0 5px 8px rgba(18,18,23,.12));
+}
+.desktop-icon span {
+  width: 100%;
+  min-height: 18px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.15;
+}
+.desktop-icon:hover { color: var(--color-dark); background: rgba(255,255,255,.78); border-color: rgba(18,18,23,.12); }
+.taskbar-button { color: #4c4c53; }
+.taskbar-button:hover,
+.taskbar-button.active { color: var(--color-dark); background: #F1F1F1; border-color: transparent; }
+.taskbar-button.active { box-shadow: inset 0 -3px 0 var(--color-primary); }
+.taskbar-start { border-right-color: rgba(18,18,23,.13); }
+.taskbar-logo {
+  display: block;
+  position: absolute;
+  left: 28px;
+  width: clamp(180px, 17vw, 260px);
+  height: 40px;
+  object-fit: contain;
+  object-position: left center;
+  pointer-events: none;
+}
+.taskbar-button .xp-app-icon {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 0;
+  filter: none;
+}
+.taskbar-button > svg,
+.taskbar-button > span > svg { width: 24px; height: 24px; }
+.system-tray > svg { width: 18px; height: 18px; }
+.current-task-chip { bottom: 88px; }
+.task-toast { bottom: 88px; }
+.launcher { bottom: 81px; }
+.current-task-chip {
+  color: var(--color-dark);
+  border-color: rgba(18,18,23,.16);
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 5px 16px rgba(18,18,23,.1);
+}
+.current-task-chip:hover { background: #FFFFFF; }
+.current-task-chip small { color: #626269; }
+.current-task-chip strong { color: var(--color-dark); }
+.current-task-icon { background: var(--color-primary); }
+.task-toast,
+.launcher {
+  color: var(--color-dark);
+  border-color: rgba(18,18,23,.16);
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 8px 24px rgba(18,18,23,.13);
+}
+.task-toast strong { color: var(--color-dark); }
+.task-toast span { color: #626269; }
+.task-toast .toast-kicker { color: var(--color-primary); }
+.launcher-title { color: #626269; }
+.launcher-item { color: var(--color-dark); }
+.launcher-item:hover { background: #F1F1F1; border-color: transparent; }
+.mobile-warning { color: var(--color-dark); background: rgba(255,255,255,.98); }
+.mobile-warning p { color: #626269; }

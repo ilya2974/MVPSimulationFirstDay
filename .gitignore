@@ -10,6 +10,8 @@ out-tsc
 
 # dependencies
 node_modules
+.pnpm-store/
+.tmp-native-deps/
 
 # IDEs and editors
 /.idea
@@ -35,6 +37,8 @@ node_modules
 npm-debug.log
 yarn-error.log
 testem.log
+*-runtime.log
+*-runtime.err.log
 /typings
 
 # Local secrets
