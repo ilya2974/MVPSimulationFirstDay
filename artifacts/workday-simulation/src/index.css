@@ -269,14 +269,14 @@
 .chat-input textarea { flex: 1; min-width: 0; min-height: 34px; max-height: 180px; resize: none; overflow-y: auto; background: #fbfbf7; border: 1px solid #d1d9d1; border-radius: 6px; padding: 8px 10px; outline: 0; font-size: 12px; line-height: 1.45; }
 .chat-input textarea:focus { border-color: #579085; box-shadow: 0 0 0 3px rgba(87,144,133,.12); }
 .send-button { width: 35px; border: 0; border-radius: 6px; color: #f3f6ef; background: #39746a; display: grid; place-items: center; }
-.messenger-layout { height: 100%; display: grid; grid-template-columns: 155px 1fr; background: #f7f7f1; }
+.messenger-layout { height: 100%; min-height: 0; overflow: hidden; display: grid; grid-template-columns: 155px 1fr; grid-template-rows: minmax(0, 1fr); background: #f7f7f1; }
 .chat-list { border-right: 1px solid #d8ddd6; background: #edf0ea; padding: 9px 6px; }
 .chat-person { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px; border: 0; background: transparent; text-align: left; border-radius: 6px; color: #526361; font-size: 11px; }
 .chat-person:hover, .chat-person.selected { background: #dce9e1; color: #224d49; }
 .person-avatar, .user-avatar { width: 25px; height: 25px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #f3f6f0; background: #39746a; font-family: var(--app-font-mono); font-size: 9px; }
-.messenger-thread { display: flex; flex-direction: column; min-width: 0; }
-.messenger-head { padding: 12px 15px; border-bottom: 1px solid #d8ddd6; color: #3d5250; font-size: 12px; font-weight: 600; }
-.messenger-messages { flex: 1; overflow: auto; padding: 17px; display: flex; flex-direction: column; gap: 8px; }
+.messenger-thread { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.messenger-head { flex: 0 0 auto; padding: 12px 15px; border-bottom: 1px solid #d8ddd6; color: #3d5250; font-size: 12px; font-weight: 600; }
+.messenger-messages { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 17px; display: flex; flex-direction: column; gap: 8px; }
 .message-line { flex: 0 0 auto; max-width: 74%; padding: 8px 11px; border-radius: 8px; background: #e5ece6; color: #4b5d59; font-size: 11px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
 .message-line.self { align-self: flex-end; color: #f1f5ef; background: #3a7069; }
 .task-panel { height: 100%; overflow: auto; background: #f8f8f2; padding: 24px 28px; }
@@ -569,3 +569,400 @@
 .launcher-item:hover { background: #F1F1F1; border-color: transparent; }
 .mobile-warning { color: var(--color-dark); background: rgba(255,255,255,.98); }
 .mobile-warning p { color: #626269; }
+
+/* Compact reply choices shared by the messenger's scripted conversations. */
+.messenger-choice-panel {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 560px;
+  padding-top: 4px;
+}
+.messenger-choice-panel > span {
+  margin-bottom: 2px;
+  color: #73737a;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.messenger-choice-panel > button {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e2e5;
+  border-radius: 7px;
+  background: #f1f1f2;
+  color: #33333a;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.messenger-choice-panel > button > strong {
+  flex: 0 0 17px;
+  color: #77777e;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.messenger-choice-panel > button:hover {
+  background: #e7e7e9;
+  border-color: #cdCDD2;
+}
+.messenger-choice-panel > button:focus-visible {
+  outline: 2px solid #808088;
+  outline-offset: 2px;
+}
+.messenger-choice-panel > button:active { background: #dcdce0; }
+
+/* Task 2: each selectable action is a separate table-like row. */
+.task-priority-list {
+  margin-top: 16px;
+  border: 1px solid #dcdce0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.task-priority-list > label {
+  display: grid;
+  grid-template-columns: 20px 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border-bottom: 1px solid #e2e2e5;
+  background: #fff;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.task-priority-list > label:last-child { border-bottom: 0; }
+.task-priority-list > label:nth-child(even) { background: #f7f7f8; }
+.task-priority-list > label:hover { background: #ededf0; }
+.task-priority-list > label.selected { background: #f8e7e9; }
+.task-priority-list > label.selected:hover { background: #f3dce0; }
+.task-priority-list input[type=checkbox] {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.task-priority-list .priority-index {
+  align-self: stretch;
+  display: grid;
+  align-items: center;
+  border-right: 1px solid #dcdce0;
+  color: #77777e;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.task-priority-list > label:focus-within {
+  outline: 2px solid #808088;
+  outline-offset: -2px;
+}
+.task-priority-list > label:has(input:disabled),
+.task-priority-list input:disabled { cursor: default; }
+
+/* Concept document: audience controls and tabular checklists. */
+.document-choice-section { margin-top: 22px; }
+.document-choice-section > h4 {
+  margin: 0 0 10px;
+  color: #33333a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.document-choice-section .choice-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.document-choice-section .choice-chips > button {
+  padding: 8px 13px;
+  border: 1px solid #dcdce0;
+  border-radius: 6px;
+  background: #f1f1f2;
+  color: #44444b;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.document-choice-section .choice-chips > button:hover { background: #e7e7e9; }
+.document-choice-section .choice-chips > button.selected {
+  border-color: var(--color-primary);
+  background: #f8e7e9;
+  color: #33333a;
+}
+.document-choice-section .choice-chips > button:focus-visible {
+  outline: 2px solid #808088;
+  outline-offset: 2px;
+}
+.document-check-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid #dcdce0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.document-check-grid > label {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 13px;
+  border-bottom: 1px solid #e2e2e5;
+  background: #fff;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.document-check-grid > label:last-child { border-bottom: 0; }
+.document-check-grid > label:nth-child(even) { background: #f7f7f8; }
+.document-check-grid > label:hover { background: #ededf0; }
+.document-check-grid > label:has(input:checked) { background: #f8e7e9; }
+.document-check-grid input[type=checkbox] {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.document-check-grid > label:focus-within {
+  outline: 2px solid #808088;
+  outline-offset: -2px;
+}
+
+/* Shared controls for the messenger surveys (displayed tasks 4 and 8). */
+.survey-history { display: flex; flex-direction: column; gap: 8px; }
+.survey-task-brief, .survey-history, .survey-options, .survey-scale { flex: 0 0 auto; }
+.survey-options { display: flex; gap: 7px; max-width: 560px; }
+.survey-options.reactions { flex-wrap: wrap; }
+.survey-options button, .survey-scale button {
+  padding: 9px 12px;
+  border: 1px solid #dcdce0;
+  border-radius: 7px;
+  background: #f1f1f2;
+  color: #33333a;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.survey-options button:hover:not(:disabled), .survey-scale button:hover {
+  background: #e7e7e9;
+  border-color: #cdCDD2;
+}
+.survey-options button:focus-visible, .survey-scale button:focus-visible,
+.survey-scale input:focus-visible {
+  outline: 2px solid #808088;
+  outline-offset: 2px;
+}
+.survey-options.multi { flex-direction: column; width: 100%; }
+.survey-options.multi > label {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e2e5;
+  border-radius: 7px;
+  background: #f1f1f2;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+.survey-options.multi > label:hover { background: #e7e7e9; }
+.survey-options.multi > label:has(input:checked) {
+  background: #f8e7e9;
+  border-color: #e4bdc3;
+}
+.survey-options.multi input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+.survey-options.multi > button { align-self: flex-start; margin-top: 3px; }
+.survey-options button:disabled { opacity: .45; cursor: not-allowed; }
+.survey-scale {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  padding: 12px;
+  border: 1px solid #e2e2e5;
+  border-radius: 7px;
+  background: #f7f7f8;
+}
+.survey-scale input[type=range] {
+  flex: 1 1 150px;
+  min-width: 100px;
+  accent-color: var(--color-primary);
+}
+.survey-scale > strong {
+  min-width: 24px;
+  color: #33333a;
+  font-size: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Structured mail replies: readable groups instead of inline checkboxes. */
+.structured-reply .reply-prefill {
+  margin: 18px 0;
+  color: #44444b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.structured-reply .reply-check-group {
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+  border: 1px solid #dcdce0;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.structured-reply .reply-check-group > h3 {
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid #dcdce0;
+  background: #eaeaec;
+  color: #33333a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.structured-reply .reply-check-group > label {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e2e2e5;
+  background: #fff;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.structured-reply .reply-check-group > label:last-child { border-bottom: 0; }
+.structured-reply .reply-check-group > label:nth-of-type(even) { background: #f7f7f8; }
+.structured-reply .reply-check-group > label:hover { background: #ededf0; }
+.structured-reply .reply-check-group > label:has(input:checked) { background: #f8e7e9; }
+.structured-reply .reply-check-group input[type=checkbox] {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.structured-reply .reply-check-group > label:focus-within {
+  outline: 2px solid #808088;
+  outline-offset: -2px;
+}
+
+/* Choices in structured replies, including the final reply to Marina. */
+.structured-reply .reply-variable-block {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #dcdce0;
+}
+.structured-reply .reply-variable-block > h3 {
+  margin: 0 0 10px;
+  color: #33333a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.structured-reply .choice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.structured-reply .choice-chips.vertical {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.structured-reply .choice-chips > button {
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #dcdce0;
+  border-radius: 7px;
+  background: #f7f7f8;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.structured-reply .choice-chips > button:hover {
+  background: #ededf0;
+  border-color: #cfcfd4;
+}
+.structured-reply .choice-chips > button.selected {
+  border-color: var(--color-primary);
+  background: #f8e7e9;
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+.structured-reply .choice-chips > button:focus-visible {
+  outline: 2px solid #808088;
+  outline-offset: 2px;
+}
+
+/* Task 6: align each business-effect metric with its result field. */
+.metric-input-list {
+  display: grid;
+  margin-top: 14px;
+  border: 1px solid #dcdce0;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.metric-input-list > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 140px);
+  align-items: center;
+  gap: 18px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e2e5;
+  background: #fff;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.metric-input-list > label:last-child { border-bottom: 0; }
+.metric-input-list > label:nth-child(even) { background: #f7f7f8; }
+.metric-input-list input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #cfcfd4;
+  border-radius: 5px;
+  background: #fff;
+  color: #33333a;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.metric-input-list input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+.metric-input-list input:disabled {
+  background: #ededf0;
+  color: #73737a;
+  cursor: not-allowed;
+}

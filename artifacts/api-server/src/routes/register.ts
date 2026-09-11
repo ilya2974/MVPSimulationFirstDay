@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { participants, simulationSessions, simulationState } from "@workspace/db/schema";
+import { participants, simulationEvents, simulationSessions, simulationState } from "@workspace/db/schema";
 
 const router: IRouter = Router();
 
@@ -56,6 +56,7 @@ router.post("/register", async (req, res) => {
         consent: req.body.consent,
         registeredAt: now,
       });
+      await tx.insert(simulationEvents).values({ id: randomUUID(), participantId, eventType: "participant_registered", payload: {}, createdAt: now });
       await tx.insert(simulationSessions).values({ id: randomUUID(), participantId });
       await tx.insert(simulationState).values({ participantId, data: {}, updatedAt: now });
     });

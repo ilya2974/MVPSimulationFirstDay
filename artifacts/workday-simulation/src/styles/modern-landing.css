@@ -524,12 +524,18 @@
   align-items: center;
 }
 
+.modern-landing.auth-flow > .mx-auto.grid > .animate-rise:first-child {
+  container-type: inline-size;
+}
+
 .modern-landing.auth-flow h1 {
   max-width: 320px !important;
-  font-size: clamp(34px, 3.4vw, 54px) !important;
+  font-size: clamp(24px, 12cqw, 48px) !important;
   line-height: 1.02 !important;
   letter-spacing: 0 !important;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
 }
 
 .modern-landing.auth-flow .paper-panel {
@@ -556,7 +562,7 @@
 
   .modern-landing.auth-flow h1 {
     max-width: 520px !important;
-    font-size: clamp(34px, 8vw, 48px) !important;
+    font-size: clamp(24px, 12cqw, 48px) !important;
   }
 
   .modern-landing.auth-flow .paper-panel {
@@ -866,3 +872,20 @@
 .modern-landing .button-secondary { font-weight: 400; }
 .modern-landing .eyebrow,
 .modern-landing .field-label { font-weight: 400; }
+
+/* The instruction reads as a letter, with its context following the reader. */
+.modern-landing.auth-flow.instruction-flow { overflow: clip; }
+.instruction-letter-header { padding-bottom: 28px; border-bottom: 1px solid #e3e3e5; }
+.instruction-letter-label { display: flex; align-items: center; gap: 8px; color: #E71026; font-size: 12px; font-weight: 600; }
+.instruction-letter-subject-label { margin-top: 24px; color: #77777f; font-size: 12px; }
+.modern-landing.auth-flow .paper-panel .instruction-letter-subject { margin-top: 6px; font-size: clamp(26px, 3vw, 36px) !important; line-height: 1.15 !important; }
+.instruction-letter-details { display: grid; gap: 8px; margin-top: 22px; font-size: 13px; }
+.instruction-letter-details > div { display: flex; gap: 16px; }
+.instruction-letter-details dt { flex: 0 0 60px; color: #77777f; }
+.instruction-letter-details dd { margin: 0; color: #121217; overflow-wrap: anywhere; }
+.instruction-letter-greeting { font-size: 22px; line-height: 1.35; font-weight: 600; color: #121217; }
+.instruction-letter-body strong { font-weight: 700; color: #121217; }
+@media (min-width: 981px) {
+  .modern-landing.auth-flow.instruction-flow > .mx-auto.grid { align-items: start; }
+  .modern-landing.auth-flow.instruction-flow > .mx-auto.grid > .animate-rise:first-child { position: sticky; top: 32px; }
+}

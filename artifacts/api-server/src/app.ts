@@ -26,6 +26,7 @@ app.use(
   }),
 );
 app.use(cors());
+app.use("/api/events", express.json({ limit: "5mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

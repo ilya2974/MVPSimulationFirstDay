@@ -36,6 +36,15 @@ describe("PostgreSQL integration", () => {
     assert.ok(Array.isArray(result));
   });
 
+  test("reports database structure and aggregate counts without personal data", async () => {
+    const counts = await pool.query(`SELECT
+      (SELECT count(*)::int FROM participants) AS participants,
+      (SELECT count(*)::int FROM simulation_sessions) AS sessions,
+      (SELECT count(*)::int FROM simulation_state WHERE data <> '{}'::jsonb) AS states_with_data,
+      (SELECT count(*)::int FROM simulation_events) AS events`);
+    console.log("Database overview:", counts.rows[0]);
+  });
+
   test("registers a participant and creates its session and state", async () => {
     const email = `DB-Test-${Date.now()}@Example.COM`;
     const response = await fetch(`${baseUrl}/api/register`, {
@@ -59,6 +68,9 @@ describe("PostgreSQL integration", () => {
     assert.equal(session?.status, "not-started");
     assert.equal(session?.completedTasks, 0);
     assert.deepEqual(state?.data, {});
+    const registered = await db.select().from(simulationEvents).where(eq(simulationEvents.participantId, participantId));
+    assert.equal(registered.length, 1);
+    assert.equal(registered[0].eventType, 'participant_registered');
 
     await db.delete(simulationEvents).where(eq(simulationEvents.participantId, participantId));
     await db.delete(simulationState).where(eq(simulationState.participantId, participantId));
@@ -91,10 +103,22 @@ describe("PostgreSQL integration", () => {
     const read = await fetch(`${baseUrl}/api/state/${participantId}`);
     assert.deepEqual((await read.json()).data, { task1Status: "completed" });
 
-    const event = await fetch(`${baseUrl}/api/events/${participantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventType: "submitted_task", payload: { task: 1 } }) });
+    const eventId = randomUUID();
+    const occurredAt = '2026-09-01T10:00:00.000Z';
+    const event = await fetch(`${baseUrl}/api/events/${participantId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: eventId, createdAt: occurredAt, eventType: "submitted_task", payload: { task: 1 } }) });
     assert.equal(event.status, 201);
     const events = await db.select().from(simulationEvents).where(eq(simulationEvents.participantId, participantId));
     assert.equal(events.length, 1);
+    assert.equal(events[0].createdAt.toISOString(), occurredAt);
+    const retry = await fetch(`${baseUrl}/api/events/${participantId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: eventId, eventType: 'submitted_task', payload: { task: 1 }, createdAt: occurredAt }) });
+    assert.equal(retry.status, 201);
+    assert.equal((await db.select().from(simulationEvents).where(eq(simulationEvents.participantId, participantId))).length, 1);
+    for (const body of [{ eventType: '' }, { eventType: 'test', id: 'invalid' }, { eventType: 'test', createdAt: 'bad-date' }, { eventType: 'test', payload: [] }]) {
+      const invalid = await fetch(`${baseUrl}/api/events/${participantId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      assert.equal(invalid.status, 400);
+    }
+    const missing = await fetch(`${baseUrl}/api/events/${randomUUID()}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventType: 'test' }) });
+    assert.equal(missing.status, 404);
 
     await db.delete(simulationEvents).where(eq(simulationEvents.participantId, participantId));
     await db.delete(simulationState).where(eq(simulationState.participantId, participantId));

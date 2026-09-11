@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { startEventTracking, trackEvent, trackStateChange } from './lib/simulation-events';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -24,7 +25,6 @@ import {
   Minus,
   MoreHorizontal,
   PenLine,
-  Play,
   Plus,
   RotateCcw,
   Save,
@@ -39,7 +39,7 @@ import {
   Wifi,
   X,
 } from 'lucide-react';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
 
@@ -67,6 +67,9 @@ const storage = {
     }
   },
   set(key: string, value: unknown) {
+    let previous: string | null = null;
+    try { previous = localStorage.getItem(key); } catch { /* Cache is optional. */ }
+    if (key !== 'workday-profile' && previous !== JSON.stringify(value)) trackStateChange(key, value, previous);
     try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* localStorage may be unavailable */ }
     // localStorage remains a fast browser cache; PostgreSQL is the durable source of truth.
     if (key !== 'workday-profile') {
@@ -525,10 +528,10 @@ function Landing() {
 
 function AuthFrame({ step, children }: { step: number; children: ReactNode }) {
   return (
-    <main className="landing-shell modern-landing auth-flow min-h-[100dvh]">
+    <main className={`landing-shell modern-landing auth-flow min-h-[100dvh]${step === 2 ? ' instruction-flow' : ''}`}>
       <PublicHeader />
       <div className="mx-auto grid w-full max-w-[1050px] gap-12 px-6 pb-20 pt-10 md:grid-cols-[.72fr_1.28fr] md:px-10 md:pt-20">
-        <div className="animate-rise pt-3"><div className="eyebrow mb-5">первый рабочий день / 0{step} из 03</div><div className="progress-dots mb-8"><i className={step >= 1 ? 'active' : ''} /><i className={step >= 2 ? 'active' : ''} /><i className={step >= 3 ? 'active' : ''} /></div><h1 className="serif max-w-[340px] text-6xl leading-[.9] tracking-[-.04em] text-[#294447]">{step === 1 ? <>Сначала<br /><em>познакомимся</em></> : step === 2 ? <>Теперь<br /><em>разберёмся</em></> : <>Готовы<br /><em>войти?</em></>}</h1><p className="mt-7 max-w-[310px] text-sm leading-6 text-[#6c7973]">{step === 1 ? 'Несколько деталей — и мы соберем для вас личную рабочую среду.' : 'Дальше вы окажетесь внутри виртуального рабочего места.'}</p></div>
+        <div className="animate-rise pt-3"><div className="eyebrow mb-5">первый рабочий день / 0{step} из 02</div><div className="progress-dots mb-8"><i className={step >= 1 ? 'active' : ''} /><i className={step >= 2 ? 'active' : ''} /></div><h1 className="serif max-w-[340px] text-6xl leading-[.9] tracking-[-.04em] text-[#294447]">{step === 1 ? <>Сначала<br /><em>познакомимся</em></> : step === 2 ? <>Теперь<br /><em>разберёмся</em></> : <>Готовы<br /><em>войти?</em></>}</h1><p className="mt-7 max-w-[310px] text-sm leading-6 text-[#6c7973]">{step === 1 ? 'Несколько деталей — и мы соберем для вас личную рабочую среду.' : 'Дальше вы окажетесь внутри виртуального рабочего места.'}</p></div>
         <div className="paper-panel animate-rise delay-1 p-7 md:p-10">{children}</div>
       </div>
     </main>
@@ -555,15 +558,6 @@ function Register() {
       return;
     }
 
-    if (form.email.trim().toLowerCase() === 'test@test.test') {
-      resetSimulationStorage();
-    }
-
-    const continueLocally = () => {
-      storage.set('workday-profile', { ...form, age: String(ageValue) });
-      setLocation('/instruction');
-    };
-
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
@@ -574,45 +568,65 @@ function Register() {
 
       if (!response.ok) {
         const reason = typeof result.message === 'string' ? result.message : 'Не удалось завершить регистрацию. Попробуйте еще раз.';
-        if (result.participantId) {
-          storage.set('workday-profile', { ...form, age: String(ageValue), participantId: result.participantId });
-          setLocation('/instruction');
-          return;
-        }
-        if (response.status >= 500) {
-          continueLocally();
-          return;
-        }
         setError(reason);
         return;
       }
 
       if (!result.participantId) {
-        continueLocally();
+        setError('Сервер не подтвердил сохранение анкеты. Попробуйте ещё раз.');
         return;
       }
 
+      resetSimulationStorage();
       storage.set('workday-profile', { ...form, age: String(ageValue), participantId: result.participantId });
       setLocation('/instruction');
     } catch {
-      continueLocally();
+      setError('Не удалось связаться с сервером. Проверьте соединение и попробуйте ещё раз.');
     } finally {
       setSubmitting(false);
     }
   };
-  return <AuthFrame step={1}><div className="eyebrow mb-3">ваш профиль</div><h2 className="serif text-4xl text-[#294447]">Короткая анкета</h2><p className="mt-3 max-w-[430px] text-sm leading-6 text-[#6e7b75]">Имя появится внутри симуляции — в письмах, чате и рабочем профиле.</p><form onSubmit={submit} className="mt-8 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Фамилия</span><input data-testid="input-last-name" required value={form.lastName} onChange={update('lastName')} className="form-input" placeholder="Орлова" /></label><label><span className="field-label">Имя</span><input data-testid="input-first-name" required value={form.firstName} onChange={update('firstName')} className="form-input" placeholder="Мария" /></label></div><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Возраст</span><input data-testid="input-age" required type="text" inputMode="numeric" pattern="[0-9]*" minLength={1} maxLength={2} value={form.age} onChange={update('age')} className="form-input" placeholder="24" /></label><label><span className="field-label">Адрес электронной почты</span><input data-testid="input-email" required type="email" value={form.email} onChange={update('email')} className="form-input" placeholder="maria@example.ru" /></label></div><label className="flex cursor-pointer gap-3 pt-1 text-xs leading-5 text-[#718078]"><input data-testid="checkbox-consent" type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#39746a]" required /><span>Согласна на использование этих данных для прохождения симуляции и сохранение анкеты в рабочей базе.</span></label>{error && <div data-testid="status-registration-error" className="rounded-md border border-[#e2b7ac] bg-[#fff1ed] px-3 py-2 text-xs text-[#a2544b]">{error}</div>}<div className="flex items-center justify-between gap-4 pt-3"><button data-testid="button-back-landing" type="button" onClick={() => setLocation('/')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-submit-registration" type="submit" disabled={submitting || !consent} className="button-primary disabled:cursor-wait disabled:opacity-60">{submitting ? 'Регистрация...' : 'Зарегистрироваться'} {!submitting && <ArrowRight size={15} />}</button></div></form></AuthFrame>;
+  return <AuthFrame step={1}><div className="eyebrow mb-3">ваш профиль</div><h2 className="serif text-4xl text-[#294447]">Короткая анкета</h2><p className="mt-3 max-w-[430px] text-sm leading-6 text-[#6e7b75]">Имя появится внутри симуляции — в письмах, чате и рабочем профиле.</p><form onSubmit={submit} className="mt-8 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Фамилия</span><input data-testid="input-last-name" required value={form.lastName} onChange={update('lastName')} className="form-input" placeholder="Орлова" /></label><label><span className="field-label">Имя</span><input data-testid="input-first-name" required value={form.firstName} onChange={update('firstName')} className="form-input" placeholder="Мария" /></label></div><div className="grid gap-5 sm:grid-cols-2"><label><span className="field-label">Возраст</span><input data-testid="input-age" required type="text" inputMode="numeric" pattern="[0-9]*" minLength={1} maxLength={2} value={form.age} onChange={update('age')} className="form-input" placeholder="24" /></label><label><span className="field-label">Адрес электронной почты</span><input data-testid="input-email" required type="email" value={form.email} onChange={update('email')} className="form-input" placeholder="maria@example.ru" /></label></div><label className="flex cursor-pointer gap-3 pt-1 text-xs leading-5 text-[#718078]"><input data-testid="checkbox-consent" type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#39746a]" required /><span>Согласен(а) на использование этих данных для прохождения симуляции и сохранение анкеты в рабочей базе.</span></label>{error && <div data-testid="status-registration-error" className="rounded-md border border-[#e2b7ac] bg-[#fff1ed] px-3 py-2 text-xs text-[#a2544b]">{error}</div>}<div className="flex items-center justify-between gap-4 pt-3"><button data-testid="button-back-landing" type="button" onClick={() => setLocation('/')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-submit-registration" type="submit" disabled={submitting || !consent} className="button-primary disabled:cursor-wait disabled:opacity-60">{submitting ? 'Регистрация...' : 'Зарегистрироваться'} {!submitting && <ArrowRight size={15} />}</button></div></form></AuthFrame>;
 }
 
 function Instruction() {
   const [, setLocation] = useLocation();
   const name = getProfile().firstName || 'коллега';
-  return <AuthFrame step={2}><div className="eyebrow mb-3">перед стартом</div><h2 className="serif text-4xl text-[#294447]">Добро пожаловать,<br /><em>{name}</em></h2><p className="mt-4 text-sm leading-6 text-[#6e7b75]">Вы пройдёте рабочий день молодого специалиста: будете изучать материалы, принимать решения и отвечать коллегам</p><div className="my-8 grid gap-3 sm:grid-cols-3">{[['45', 'минут'], ['8', 'заданий'], ['4', 'инструмента']].map(([num, text]) => <div key={text} className="rounded-lg border border-[#d6ded5] bg-[#f2f5ee] p-4"><div className="font-mono text-xl text-[#39746a]">{num}</div><div className="mt-1 text-[11px] text-[#78847e]">{text}</div></div>)}</div><div className="border-l-2 border-[#c6a16b] pl-4 text-xs leading-5 text-[#6e7b75]">Используйте Почту, Word, ИИ-помощника и Мессенджер. Между открытыми окнами можно переключаться через нижнюю панель. У каждого задания свой таймер: он начнётся при первом открытии рабочего пространства задания и продолжит идти при переключении между окнами</div><div className="mt-9 flex items-center justify-between"><button data-testid="button-back-register" onClick={() => setLocation('/register')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-to-demo" onClick={() => setLocation('/demo')} className="button-primary">Посмотреть инструкцию <ArrowRight size={15} /></button></div></AuthFrame>;
-}
-
-function Demo() {
-  const [, setLocation] = useLocation();
-  const [played, setPlayed] = useState(false);
-  return <AuthFrame step={3}><div className="eyebrow mb-3">короткая демонстрация</div><h2 className="serif text-4xl text-[#294447]">Так выглядит<br /><em>ваш рабочий день</em></h2><div className="group relative mt-7 aspect-video overflow-hidden rounded-lg border border-[#bfcfc5] bg-[#2a4549]"><div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_25%,rgba(203,183,133,.32),transparent_28%),linear-gradient(140deg,#466b6e,#263f45)]" /><div className="absolute inset-0 flex flex-col items-center justify-center text-[#f1f3e9]">{played ? <><span className="grid h-14 w-14 place-items-center rounded-full border border-[#e8dbb8]/70 bg-[#f0d39a]/15 text-[#f0d39a]"><Check size={20} /></span><span className="mt-4 font-mono text-[9px] uppercase tracking-[.22em] text-[#b9cec0]">Видео будет добавлено позже</span></> : <button data-testid="button-play-demo" onClick={() => setPlayed(true)} className="grid h-14 w-14 place-items-center rounded-full border border-[#e8dbb8]/70 bg-[#f0d39a]/15 text-[#f0d39a] transition-transform duration-200 group-hover:scale-105" aria-label="Воспроизвести демонстрацию"><Play size={20} fill="currentColor" className="ml-1" /><span className="sr-only">Воспроизвести демонстрацию</span></button>} {!played && <span className="mt-4 font-mono text-[9px] uppercase tracking-[.22em] text-[#b9cec0]">видео-инструкция · 01:48</span>}</div><div className="absolute bottom-3 left-3 right-3 flex items-center justify-between font-mono text-[8px] text-[#c8d6cd]"><span>рабочий стол / начало работы</span><span>{played ? 'готово' : '▶ 00:00'}</span></div></div><p className="mt-4 text-xs leading-5 text-[#74817b]">В видео — только навигация по рабочему месту. Содержание решений остаётся за вами</p><div className="mt-8 flex items-center justify-between"><button data-testid="button-back-instruction" onClick={() => setLocation('/instruction')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-skip-demo" onClick={() => setLocation('/workspace')} className="button-primary">Пропустить и начать <ArrowRight size={15} /></button></div></AuthFrame>;
+  return <AuthFrame step={2}>
+    <header className="instruction-letter-header">
+      <div className="instruction-letter-label"><Mail size={16} aria-hidden="true" /> Входящее письмо</div>
+      <div className="instruction-letter-subject-label">Тема</div>
+      <h2 className="serif instruction-letter-subject">Ваш первый рабочий день</h2>
+      <dl className="instruction-letter-details">
+        <div><dt>От кого</dt><dd>Команда Changellenge &gt;&gt;</dd></div>
+        <div><dt>Кому</dt><dd>{name}</dd></div>
+      </dl>
+    </header>
+    <div className="instruction-letter-body mt-6 space-y-5 text-sm leading-6 text-[#6e7b75]">
+      <h3 className="instruction-letter-greeting">Привет, {name}!</h3>
+      <p>Вы открыли симуляцию рабочего дня от Changellenge &gt;&gt;.</p>
+      <p>Представьте, что сегодня ваш обычный рабочий день. Вы присоединяетесь к проектной команде и получаете рабочие задачи: нужно разобраться в информации, спланировать работу, взаимодействовать с коллегами и принимать решения по проекту.</p>
+      <p>Во время симуляции вы будете работать в крупной телекоммуникационной компании, которая создает цифровые решения для миллионов людей и бизнеса. Компания развивает сети связи, онлайн-сервисы, технологические продукты и использует данные и искусственный интеллект для создания новых возможностей. В компании работают команды, которые занимаются созданием сетей связи (технический блок), разработкой IT-продуктов, поддержкой клиентов, продажами, маркетингом, безопасностью и внутренними процессами. Главная задача компании — создавать надежные цифровые сервисы, которые помогают людям и организациям решать повседневные задачи быстрее и удобнее.</p>
+      <p>Во время симуляции вам будет доступен ряд инструментов, которые обычно есть у специалистов:</p>
+      <ul className="list-disc space-y-3 pl-5">
+        <li><strong>Корпоративная почта</strong> — здесь вы найдете сообщения от коллег и материалы для работы. Обязательно изучите ее перед выполнением заданий: важная информация может уже ждать вас внутри. Как и в обычной почте сообщения можно не только получать, но и отправлять.</li>
+        <li><strong>Мессенджер</strong> — здесь будут появляться рабочие сообщения и новые вводные от команды.</li>
+        <li><strong>Корпоративный ИИ-помощник</strong> — вы можете использовать его, чтобы искать идеи, структурировать информацию и улучшать свою работу.</li>
+      </ul>
+      <p>У вас будет <strong>45 минут</strong> на прохождение всей симуляции. За это время вам предстоит выполнить <strong>8 рабочих заданий</strong>. Каждое задание имеет ограниченное время выполнения — <strong>следите за таймером</strong>.</p>
+      <p>Как только вы нажмете кнопку <strong>«Приступить к тесту»</strong>, отсчет времени начнется. В процессе прохождения вы сможете возвращаться к любым письмам, сообщениям и материалам, которые уже открывали.</p>
+      <p>Для успешного прохождения:</p>
+      <ul className="list-disc space-y-3 pl-5">
+        <li>внимательно изучайте доступную информацию перед принятием решений;</li>
+        <li>используйте инструменты внутри симуляции так, как сделали бы это в реальной работе;</li>
+        <li>не используйте внешние ресурсы и помощь за пределами симуляции.</li>
+      </ul>
+      <p>Результатом каждого задания будет <strong>заполненная и отправленная форма</strong>. После отправки ответа или окончания времени на выполнение задания вы автоматически перейдете к следующему этапу.</p>
+      <p>Главное — действуйте как настоящий сотрудник проектной команды: анализируйте информацию, задавайте правильные вопросы, используйте доступные инструменты и принимайте решения.</p>
+      <p>Желаем удачи и интересного рабочего дня!</p>
+    </div>
+    <div className="mt-9 flex flex-wrap items-center justify-between gap-4"><button data-testid="button-back-register" onClick={() => setLocation('/register')} className="button-secondary"><ArrowLeft size={15} /> Назад</button><button data-testid="button-start-test" onClick={() => setLocation('/workspace')} className="button-primary">Приступить к тесту <ArrowRight size={15} /></button></div>
+  </AuthFrame>;
 }
 
 function WindowFrame({ id, title, icon, state, active, onFocus, onClose, onMinimize, onMaximize, children }: { id: AppId; title: string; icon: ReactNode; state: WindowState; active: boolean; onFocus: () => void; onClose: () => void; onMinimize: () => void; onMaximize: () => void; children: ReactNode }) {
@@ -663,7 +677,7 @@ function WindowFrame({ id, title, icon, state, active, onFocus, onClose, onMinim
   return <section ref={frameRef} data-testid={`window-${id}`} className={`app-window ${state.maximized ? 'is-max' : ''} ${dragging ? 'is-dragging' : ''}`} style={{ ...positions[id], ...(position ?? {}), zIndex: state.z, display: state.visible && !state.minimized ? 'flex' : 'none' }} onMouseDown={onFocus}><header className={`app-titlebar ${active ? 'active' : ''}`} onDoubleClick={onMaximize} onPointerDown={startDragging} onPointerMove={dragWindow} onPointerUp={stopDragging} onPointerCancel={stopDragging}><div className="app-title">{icon}<span>{title}</span></div><div className="window-controls"><button data-testid={`button-minimize-${id}`} className="window-control" onClick={onMinimize} aria-label="Свернуть"><Minus size={14} /></button><button data-testid={`button-maximize-${id}`} className="window-control" onClick={onMaximize} aria-label="Развернуть"><Square size={12} /></button><button data-testid={`button-close-${id}`} className="window-control close" onClick={onClose} aria-label="Закрыть"><X size={14} /></button></div></header><div className="app-content">{children}</div></section>;
 }
 
-function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, onOpenMessengerContact, taskStatus, onInitialReply, currentTask, completedTasks, taskStartTimes, files, onFileChange, onCompleteTask }: { selectedId: string; setSelectedId: (id: string) => void; notify: (message: string) => void; onTaskOpened: (task: number) => void; onOpenMessengerContact: (contact: 'fedor' | 'ludmila') => void; taskStatus: TaskStatus; onInitialReply: () => void; currentTask: number; completedTasks: number; taskStartTimes: Record<number, number>; files: Record<number, WorkFileState>; onFileChange: (task: number, patch: Partial<WorkFileState>) => void; onCompleteTask: (task: number) => void }) {
+function MailApp({ onMailArrived, requestedMail, selectedId, setSelectedId, notify, onTaskOpened, onOpenMessengerContact, taskStatus, onInitialReply, currentTask, completedTasks, taskStartTimes, files, onFileChange, onCompleteTask }: { onMailArrived: (mail: MailRecord) => void; requestedMail: { id: string; sequence: number } | null; selectedId: string; setSelectedId: (id: string) => void; notify: (message: string) => void; onTaskOpened: (task: number) => void; onOpenMessengerContact: (contact: 'fedor' | 'ludmila') => void; taskStatus: TaskStatus; onInitialReply: () => void; currentTask: number; completedTasks: number; taskStartTimes: Record<number, number>; files: Record<number, WorkFileState>; onFileChange: (task: number, patch: Partial<WorkFileState>) => void; onCompleteTask: (task: number) => void }) {
   const [folder, setFolder] = useState('Входящие');
   const [taskReply, setTaskReply] = useState<number | null>(() => storage.get<number | null>('task1ReplyChoice', null));
   const [mailReplyChoices, setMailReplyChoices] = useState<Record<string, number>>(() => storage.get('workday-mail-reply-choices', {}));
@@ -685,6 +699,21 @@ function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, onOpenMessen
     const all = [...extra, ...merged];
     return savedReply !== null && !all.some((mail) => mail.id === taskFollowupMail.id) ? [taskFollowupMail, ...all] : all;
   });
+  // Snapshot existing IDs before effects save records. Reloads, read flags and
+  // moving existing mail back to the inbox must not announce another delivery.
+  const knownMailIds = useRef(new Set(storage.get<MailRecord[]>('workday-mail-records', getInitialMailRecords().filter((mail) => mail.id !== 'task')).map((mail) => mail.id)));
+  useEffect(() => {
+    for (const mail of records) {
+      if (!knownMailIds.current.has(mail.id) && mail.folder === 'inbox') onMailArrived(mail);
+      knownMailIds.current.add(mail.id);
+    }
+  }, [records, onMailArrived]);
+  useEffect(() => {
+    if (!requestedMail) return;
+    setFolder('Входящие');
+    setReplyTarget(null);
+    openMail(requestedMail.id);
+  }, [requestedMail]);
   const [drafts, setDrafts] = useState<MailRecord[]>(() => storage.get<MailRecord[]>('workday-mail-drafts', []));
   const [composeOpen, setComposeOpen] = useState(false);
   const [draft, setDraft] = useState({ id: '', to: '', subject: '', body: '' });
@@ -719,7 +748,7 @@ function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, onOpenMessen
         setRecords((current) => [...responses.filter((response) => !current.some((mail) => mail.id === response.id)), ...current]);
       }
       setPendingMailResponses((current) => current.filter((pending) => !due.some((item) => item.mailId === pending.mailId)));
-      if (responses.length) notify(responses.length === 1 ? 'Получен ответ на ваше письмо' : `Получено ответов: ${responses.length}`);
+
     };
     deliverResponses();
     const nextDueAt = Math.min(...pendingMailResponses.map((pending) => pending.dueAt));
@@ -767,7 +796,7 @@ function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, onOpenMessen
       if (!fresh.length) return;
       storage.set('workday-delivered-mail', [...delivered, ...fresh.map((mail) => mail.id)]);
       setRecords((current) => [...fresh.filter((mail) => !current.some((item) => item.id === mail.id)), ...current]);
-      notify(fresh.length === 1 ? `Новое письмо: ${fresh[0].subject}` : `Получено новых писем: ${fresh.length}`);
+
     };
     deliverDueMail();
     const timer = window.setInterval(deliverDueMail, 1000);
@@ -784,6 +813,7 @@ function MailApp({ selectedId, setSelectedId, notify, onTaskOpened, onOpenMessen
     ['Корзина', Trash2, ''],
   ] as const;
   const openMail = (id: string) => {
+    trackEvent('mail_opened', { mailId: id });
     setSelectedId(id);
     setComposeOpen(false);
     const mail = records.find((item) => item.id === id);
@@ -938,7 +968,10 @@ function EmailReading({ email, folder, notify, onToggleFlag, onMove, taskStatus,
   </> : email.id === 'task-submission' ? <>
     <p>Марина, направляю заполненный план к встрече.</p>
     <div className="attachment-card downloaded"><FileText size={22} /><div><strong>План_работы_к_встрече.docx</strong><span>DOCX · заполненная форма задания 1</span></div><Check size={15} className="ml-auto" /></div>
-  </> : <>{(email.body ?? email.preview).split('\n').map((paragraph, index) => paragraph ? <p key={`${email.id}-body-${index}`}>{paragraph}</p> : <br key={`${email.id}-space-${index}`} />)}{email.attachment && <div className={`attachment-card task-attachment ${files[email.attachment.task]?.downloaded ? 'downloaded' : ''}`}><FileText size={24} /><div><strong>{email.attachment.name}</strong><span>{email.attachment.description}</span></div><button data-testid={`button-download-task-${email.attachment.task}-file`} type="button" disabled={files[email.attachment.task]?.downloaded} onClick={() => { onFileChange(email.attachment!.task, { downloaded: true }); notify('Файл скачан. Откройте его в Word'); }} className="attachment-action"><Download size={14} /> {files[email.attachment.task]?.downloaded ? 'Скачано' : 'Скачать'}</button></div>}</>;
+  </> : <>{(email.body ?? email.preview).split('\n').map((paragraph, index) => paragraph ? <p key={`${email.id}-body-${index}`}>{paragraph}</p> : <br key={`${email.id}-space-${index}`} />)}{email.attachment && <div className={`attachment-card task-attachment ${files[email.attachment.task]?.downloaded ? 'downloaded' : ''}`}><FileText size={24} /><div><strong>{email.attachment.name}</strong><span>{email.attachment.description}</span></div><button data-testid={`button-download-task-${email.attachment.task}-file`} type="button" disabled={files[email.attachment.task]?.downloaded} onClick={() => { onFileChange(email.attachment!.task, { downloaded: true }); notify('Файл скачан. Откройте его в Word'); }} className="attachment-action"><Download size={14} /> {files[email.attachment.task]?.downloaded ? 'Скачано' : 'Скачать'}</button></div>}
+    {email.attachment?.task === 4 && files[4]?.downloaded && <div className="task-hint" data-testid="hint-task-4-next-step"><Info size={15} /><span><strong>Следующий шаг:</strong> откройте Word на рабочем столе и выберите файл «Концепция ИИ-помощника».</span></div>}
+    {email.attachment?.task === 7 && files[7]?.downloaded && <div className="task-hint" data-testid="hint-task-7-next-step"><Info size={15} /><span><strong>Следующий шаг:</strong> откройте Word на рабочем столе и выберите файл «Расчёт бизнес-эффекта».</span></div>}
+  </>;
   const contextualOptions = contextualMailReplyOptions[email.id];
   const contextualChoice = mailReplyChoices[email.id];
   return <article className="reading-pane">
@@ -1314,7 +1347,13 @@ function Workspace() {
   const [active, setActive] = useState<AppId | null>(null);
   const [selectedMail, setSelectedMail] = useState('task');
   const [welcome, setWelcome] = useState(() => !storage.get('workday-welcome-seen', false));
-  const [mailToast, setMailToast] = useState<'task' | 'followup' | null>(null);
+  const [mailToasts, setMailToasts] = useState<MailRecord[]>([]);
+  const mailToast = mailToasts[0];
+  const [requestedMail, setRequestedMail] = useState<{ id: string; sequence: number } | null>(null);
+  const onMailArrived = useCallback((mail: MailRecord) => {
+    setMailToasts((queue) => queue.some((item) => item.id === mail.id) ? queue : [...queue, mail]);
+  }, []);
+  const dismissMailToast = () => setMailToasts((queue) => queue.slice(1));
   const [launcher, setLauncher] = useState(false);
   const [notice, setNotice] = useState('');
   const [currentTask, setCurrentTask] = useState(() => {
@@ -1358,10 +1397,10 @@ function Workspace() {
   useEffect(() => { if (!launcher) return; const onDown = (event: MouseEvent) => { if (!launcherRef.current?.contains(event.target as Node) && !startRef.current?.contains(event.target as Node)) setLauncher(false); }; document.addEventListener('mousedown', onDown); return () => document.removeEventListener('mousedown', onDown); }, [launcher]);
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 2700); return () => window.clearTimeout(timer); }, [notice]);
   useEffect(() => {
-    if (currentTask !== 1 || completedTasks >= 1 || taskReplySelected) return;
-    const timer = window.setTimeout(() => setMailToast('task'), 2400);
+    if (!mailToast || welcome) return;
+    const timer = window.setTimeout(() => setMailToasts((queue) => queue.slice(1)), 8000);
     return () => window.clearTimeout(timer);
-  }, [currentTask, completedTasks, taskReplySelected]);
+  }, [mailToast?.id, welcome]);
   const userInitials = `${profile.firstName?.[0] || 'А'}${profile.lastName?.[0] || 'С'}`.toUpperCase();
   const notify = (message: string) => setNotice(message);
   const startTaskTimer = (task: number) => {
@@ -1386,6 +1425,7 @@ function Workspace() {
     notify(`Начинается задание ${taskDisplayNumber(task)}`);
   };
   const focus = (id: AppId) => {
+    if (!windows[id].visible || windows[id].minimized || active !== id) trackEvent('app_focused', { app: id });
     if (id === 'word' && currentTask === 2) startTaskTimer(2);
     if (id === 'word' && [1, 4, 7].includes(currentTask) && files[currentTask]?.opened) startTaskTimer(currentTask);
     if (id === 'messenger' && [5, 9].includes(currentTask)) startTaskTimer(currentTask);
@@ -1393,9 +1433,9 @@ function Workspace() {
     setWindows((current) => { const highest = Math.max(...Object.values(current).map((value) => value.z), 8); return { ...current, [id]: { ...current[id], visible: true, minimized: false, z: highest + 1 } }; });
   };
   const openApp = (id: AppId) => { focus(id); setLauncher(false); };
-  const close = (id: AppId) => { setWindows((current) => ({ ...current, [id]: { ...current[id], visible: false, minimized: false } })); if (active === id) setActive(null); };
-  const minimize = (id: AppId) => { setWindows((current) => ({ ...current, [id]: { ...current[id], minimized: true } })); };
-  const maximize = (id: AppId) => { setWindows((current) => ({ ...current, [id]: { ...current[id], maximized: !current[id].maximized } })); focus(id); };
+  const close = (id: AppId) => { trackEvent('app_close', { app: id }); setWindows((current) => ({ ...current, [id]: { ...current[id], visible: false, minimized: false } })); if (active === id) setActive(null); };
+  const minimize = (id: AppId) => { trackEvent('app_minimize', { app: id }); setWindows((current) => ({ ...current, [id]: { ...current[id], minimized: true } })); };
+  const maximize = (id: AppId) => { trackEvent('app_maximize', { app: id }); setWindows((current) => ({ ...current, [id]: { ...current[id], maximized: !current[id].maximized } })); focus(id); };
   const activateTask = (task: number) => {
     storage.set('workday-current-task', task);
     setCurrentTask(task);
@@ -1425,7 +1465,7 @@ function Workspace() {
   };
   const handleReplySelected = () => {
     setTaskReplySelected(true);
-    window.setTimeout(() => setMailToast('followup'), 700);
+
   };
   const updateFile = (task: number, patch: Partial<WorkFileState>) => {
     setFiles((current) => {
@@ -1440,10 +1480,11 @@ function Workspace() {
     });
   };
   const openMailToast = () => {
-    const target = mailToast === 'followup' ? 'task-followup' : 'task';
-    setMailToast(null);
+    if (!mailToast) return;
+    const target = mailToast.id;
+    dismissMailToast();
     focus('mail');
-    setSelectedMail(target);
+    setRequestedMail((previous) => ({ id: target, sequence: (previous?.sequence ?? 0) + 1 }));
   };
   const openCurrentTask = () => {
     if (currentTask === 1) {
@@ -1483,8 +1524,9 @@ function Workspace() {
     <div className="desktop-topbar"><div className="flex items-center"><span className="mr-5 flex items-center gap-2 text-[#dce8df]"><AppMark small /><span className="hidden font-sans text-[10px] sm:inline">рабочий день</span></span><div className="metric"><span>ВРЕМЯ</span><strong>{formatTimer(totalSeconds)}</strong></div>{taskStartTimes[currentTask] && completedTasks < currentTask && <div className="metric"><span>ЗАДАНИЕ {taskDisplayNumber(currentTask)}</span><strong>{formatTimer(taskSeconds)}</strong></div>}<div className="metric progress-metric"><span>ВЫПОЛНЕНО {completedCount} ИЗ {TASK_TOTAL}</span><strong>{progress}%</strong><i><b style={{ width: `${progress}%` }} /></i></div></div><div className="flex items-center gap-3"><span className="hidden text-[#aec2b9] sm:inline">Среда, первый день</span><span className="user-avatar !h-6 !w-6 !bg-[#d19b66] !text-[8px]">{userInitials}</span></div></div>
     <div className="desktop-icons"><DesktopIcon label="Почта" icon={<XpAppIcon id="mail" size={46} />} onClick={() => openApp('mail')} /><DesktopIcon label="Word" icon={<XpAppIcon id="word" size={46} />} onClick={() => openApp('word')} /><DesktopIcon label="ИИ-помощник" icon={<XpAppIcon id="ai" size={46} />} onClick={() => openApp('ai')} /><DesktopIcon label="Мессенджер" icon={<XpAppIcon id="messenger" size={46} />} onClick={() => openApp('messenger')} /></div>
     <button data-testid="button-current-task" onClick={openCurrentTask} className="current-task-chip"><span className="current-task-icon"><CheckCircle2 size={15} /></span><span><small>Задание {taskDisplayNumber(currentTask)} · выполнено {completedCount} из {TASK_TOTAL}</small><strong>{currentTaskLabel}</strong></span><ArrowRight size={14} /></button>
-    {(Object.keys(windows) as AppId[]).map((id) => <WindowFrame key={id} id={id} title={appLabels[id]} icon={appIcon(id)} state={windows[id]} active={active === id} onFocus={() => focus(id)} onClose={() => close(id)} onMinimize={() => minimize(id)} onMaximize={() => maximize(id)}>{id === 'mail' && <MailApp selectedId={selectedMail} setSelectedId={setSelectedMail} notify={notify} onTaskOpened={handleTaskOpened} onOpenMessengerContact={openMessengerContact} taskStatus={taskStatus} onInitialReply={handleReplySelected} currentTask={currentTask} completedTasks={completedTasks} taskStartTimes={taskStartTimes} files={files} onFileChange={updateFile} onCompleteTask={completeTask} />}{id === 'word' && <WordApp notify={notify} currentTask={currentTask} completedTasks={completedTasks} files={files} onFileChange={updateFile} onTaskOpened={handleTaskOpened} taskStatus={taskStatus} onCompleteTask={completeTask} />}{id === 'ai' && <AiApp currentTask={currentTask} />}{id === 'messenger' && <MessengerApp currentTask={currentTask} completedTasks={completedTasks} taskStartTimes={taskStartTimes} requestedChat={messengerTarget} onTransitionComplete={() => activateTask(2)} onSurveyComplete={completeTask} />}</WindowFrame>)}
-    {mailToast && <div className="task-toast"><button data-testid="button-task-toast" onClick={openMailToast}><span className="toast-kicker">Новое письмо · {mailToast === 'followup' ? '09:14' : '09:12'}</span><strong>Марина Орлова</strong><span>{mailToast === 'followup' ? 'Шаблон плана к встрече · есть вложение' : 'Первая задача · выберите вариант ответа'}</span></button><button data-testid="button-dismiss-task-toast" onClick={() => setMailToast(null)} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}
+    {(Object.keys(windows) as AppId[]).map((id) => <WindowFrame key={id} id={id} title={appLabels[id]} icon={appIcon(id)} state={windows[id]} active={active === id} onFocus={() => focus(id)} onClose={() => close(id)} onMinimize={() => minimize(id)} onMaximize={() => maximize(id)}>{id === 'mail' && <MailApp onMailArrived={onMailArrived} requestedMail={requestedMail} selectedId={selectedMail} setSelectedId={setSelectedMail} notify={notify} onTaskOpened={handleTaskOpened} onOpenMessengerContact={openMessengerContact} taskStatus={taskStatus} onInitialReply={handleReplySelected} currentTask={currentTask} completedTasks={completedTasks} taskStartTimes={taskStartTimes} files={files} onFileChange={updateFile} onCompleteTask={completeTask} />}{id === 'word' && <WordApp notify={notify} currentTask={currentTask} completedTasks={completedTasks} files={files} onFileChange={updateFile} onTaskOpened={handleTaskOpened} taskStatus={taskStatus} onCompleteTask={completeTask} />}{id === 'ai' && <AiApp currentTask={currentTask} />}{id === 'messenger' && <MessengerApp currentTask={currentTask} completedTasks={completedTasks} taskStartTimes={taskStartTimes} requestedChat={messengerTarget} onTransitionComplete={() => activateTask(2)} onSurveyComplete={completeTask} />}</WindowFrame>)}
+    {mailToast && !welcome && <div key={mailToast.id} style={{ zIndex: Math.max(...Object.values(windows).map((item) => item.z), 30) + 1 }} className="task-toast" role="status" aria-live="polite"><button data-testid="button-task-toast" onClick={openMailToast}><span className="toast-kicker">Новое письмо{mailToasts.length > 1 ? ` · ещё ${mailToasts.length - 1}` : ''}</span><strong>{mailToast.sender}</strong><span>{mailToast.subject}{mailToast.attachment ? ' · есть вложение' : ''}</span></button><button data-testid="button-dismiss-task-toast" onClick={dismissMailToast} className="absolute right-2 top-2 !w-auto !p-1 text-[#adc3b8]" aria-label="Скрыть уведомление"><X size={13} /></button></div>}
+
     {launcher && <div ref={launcherRef} className="launcher"><div className="launcher-title">Рабочие приложения</div><div className="launcher-grid">{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-launcher-${id}`} key={id} onClick={() => openApp(id)} className="launcher-item">{appIcon(id)}{appLabels[id]}</button>)}</div></div>}
     {notice && <div data-testid="status-workspace-notice" className="task-transition-toast animate-toast">{notice}</div>}
     <div className="desktop-taskbar"><img className="taskbar-logo" src="/workday-assets/changellenge-logo-red.png" alt="Changellenge" /><div className="taskbar-center"><button ref={startRef} data-testid="button-start-menu" onClick={() => setLauncher((value) => !value)} className={`taskbar-button taskbar-start ${launcher ? 'active' : ''}`} aria-label="Открыть меню приложений"><LayoutGrid size={19} /></button>{(['mail', 'word', 'ai', 'messenger'] as AppId[]).map((id) => <button data-testid={`button-taskbar-${id}`} key={id} onClick={() => { if (windows[id].visible && !windows[id].minimized && active === id) minimize(id); else openApp(id); }} className={`taskbar-button ${windows[id].visible && !windows[id].minimized ? 'active' : ''}`}><span className="hidden sm:inline">{appIcon(id)}</span><span>{appLabels[id]}</span></button>)}<button data-testid="button-finish-simulation" onClick={finishSimulation} disabled={!canFinish} className="taskbar-button disabled:cursor-not-allowed disabled:opacity-40"><CheckCircle2 size={14} /><span>Завершить день</span></button></div><div className="system-tray"><Wifi size={13} /><Bell size={13} /><div className="system-time"><time data-testid="system-clock" dateTime={now.toISOString()}>{trayTime}</time><div>{trayDate}.{now.getFullYear()}</div></div></div></div>
@@ -1509,10 +1551,13 @@ function Finish() {
 }
 
 function Router() {
-  return <Switch><Route path="/" component={Landing} /><Route path="/register" component={Register} /><Route path="/instruction" component={Instruction} /><Route path="/demo" component={Demo} /><Route path="/workspace" component={Workspace} /><Route path="/finish" component={Finish} /><Route component={NotFound} /></Switch>;
+  const [path] = useLocation();
+  useEffect(() => { trackEvent('page_viewed', { path }); }, [path]);
+  return <Switch><Route path="/" component={Landing} /><Route path="/register" component={Register} /><Route path="/instruction" component={Instruction} /><Route path="/demo"><Redirect to="/instruction" /></Route><Route path="/workspace" component={Workspace} /><Route path="/finish" component={Finish} /><Route component={NotFound} /></Switch>;
 }
 
 function App() {
+  useEffect(startEventTracking, []);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     const participantId = getProfile().participantId;
@@ -1521,6 +1566,7 @@ function App() {
       .then((response) => response.ok ? response.json() : null)
       .then((result: { data?: Record<string, unknown> } | null) => {
         const serverData = result?.data ?? {};
+        // Restoring a snapshot is not a new participant action.
         for (const [key, value] of Object.entries(serverData)) {
           try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* cache is optional */ }
         }
@@ -1528,7 +1574,7 @@ function App() {
         const pendingMigration: Promise<unknown>[] = [];
         for (let index = 0; index < localStorage.length; index += 1) {
           const key = localStorage.key(index);
-          if (!key || key === 'workday-profile' || key in serverData) continue;
+          if (!key || key === 'workday-profile' || key.startsWith('event-outbox:') || key in serverData) continue;
           try {
             const value = JSON.parse(localStorage.getItem(key) ?? 'null');
             pendingMigration.push(fetch(`/api/state/${participantId}`, {
