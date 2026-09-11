@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: workday-simulation
+    runtime: node
+    plan: 0.5c-512mb
+    branch: deploy/render
+    buildCommand: corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm run build
+    preDeployCommand: corepack pnpm run db:migrate
+    startCommand: corepack pnpm start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: workday-simulation-db
+          property: connectionString
+      - key: OPENROUTER_API_KEY
+        sync: false
+
+databases:
+  - name: workday-simulation-db
+    plan: 0.1c-256mb
+    postgresMajorVersion: "18"
+    diskSizeGB: 1
+    databaseName: workday_simulation
+    user: workday_simulation
+    ipAllowList: []

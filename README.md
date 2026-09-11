@@ -11,7 +11,7 @@
 ## Требования
 
 - Node.js 24;
-- pnpm 9 или 10;
+- pnpm 10.28.2 (версия закреплена в `package.json`);
 - macOS или Linux для запуска через готовый shell-скрипт.
 
 Проверить версии:
@@ -25,7 +25,7 @@ pnpm --version
 
 ```bash
 corepack enable
-corepack install --global pnpm@10
+corepack install --global pnpm@10.28.2
 ```
 
 ## Быстрый запуск
@@ -143,3 +143,141 @@ DATABASE_URL="postgres://..." pnpm --filter @workspace/db run push
 3. Убедитесь, что порты 3000 и 5050 свободны: `lsof -i :3000 -i :5050`.
 4. Посмотрите сообщения в `/tmp/mvpsim_front.log` и `/tmp/mvpsim_api.log`.
 5. Проверьте API командой `curl http://localhost:5050/api/healthz`. Исправный сервер вернёт `{"status":"ok"}`.
+
+## Production deployment on Render (one public URL)
+
+The repository includes `render.yaml` for one Node web service and one private
+PostgreSQL database. Express serves `artifacts/workday-simulation/dist/public`
+in production and keeps `/api` reserved for the API. Frontend routes such as
+`/register` and `/workspace` support direct navigation and refresh. The mockup
+sandbox is built by the workspace build but is not published by Express.
+
+Use Node.js 24 and the pinned pnpm 10.28.2 (`corepack pnpm` uses the version in
+`package.json`). No Replit account, connector, or development server is needed.
+The existing `./start-project.sh` and separate API/Vite development commands
+continue to work. Vite now defaults to `/` and local ports when not specified.
+
+### Deploy the branch
+
+1. Push the prepared branch to GitHub from the repository root:
+   ```bash
+   git push -u origin deploy/render
+   ```
+   This does not merge anything into `main`.
+2. Sign in to [Render](https://dashboard.render.com/), choose **New → Blueprint**,
+   connect GitHub, and select `ilya2974/MVPSimulationFirstDay`.
+3. Select branch **deploy/render** and Blueprint path **render.yaml**. Keep the
+   repository root as the service root directory; do not select an artifact
+   subdirectory because the build needs the entire pnpm workspace.
+4. Review the resources and cost. This Blueprint provisions paid compute:
+   web `0.5c-512mb`, PostgreSQL `0.1c-256mb` with 1 GB storage. The web service
+   uses a pre-deploy migration command, which requires a paid service. See
+   [Render's deployment steps](https://render.com/docs/deploys) and
+   [Blueprint configuration](https://render.com/docs/blueprint-spec).
+5. Enter `OPENROUTER_API_KEY` in Render's secret field and create the Blueprint.
+   `DATABASE_URL` is connected automatically using the database's internal URL.
+   The new database is empty; existing local or external data is not copied.
+6. Wait for build, pre-deploy migrations, and the health check to succeed.
+   Open the web service's assigned **https://…onrender.com** URL. That is the
+   single public URL to share; the actual hostname is assigned by Render.
+7. Verify `/api/healthz` returns `{"status":"ok"}`, open `/register` directly,
+   refresh `/workspace`, and complete a registration plus an AI conversation.
+   An unknown `/api/...` URL must return JSON with HTTP 404, not the frontend.
+
+Render follows `deploy/render`; subsequent pushes deploy that branch. Switch
+Render to `main` only after an approved merge. No merge is needed to deploy.
+
+### Exact service commands
+
+**Build command** (includes development dependencies needed by Vite/TypeScript):
+
+```bash
+corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm run build
+```
+
+**Pre-deploy command**:
+
+```bash
+corepack pnpm run db:migrate
+```
+
+**Start command**:
+
+```bash
+corepack pnpm start
+```
+
+**Health check path**: `/api/healthz`. It checks HTTP availability; registration
+is the end-to-end database check. Express listens on `0.0.0.0` using Render's
+`PORT`; do not hardcode or configure a frontend production port.
+
+For manual setup instead of a Blueprint, create PostgreSQL and a Node web
+service in the same region, choose the paid web plan, set the commands above,
+select `deploy/render`, and configure the environment below.
+
+### Render environment variables
+
+| Variable | Configuration |
+| --- | --- |
+| `NODE_ENV` | `production`, set by the Blueprint and production start script. |
+| `DATABASE_URL` | Required secret. Blueprint supplies the private PostgreSQL connection string. For manual setup, use the database's Internal Database URL. |
+| `OPENROUTER_API_KEY` | Secret entered in Render. Required for live model replies; without it, the existing local fallback responses remain active. |
+| `PORT` | Supplied by Render automatically; leave it unset in your configuration. |
+| `OPENROUTER_MODEL` | Optional; existing default `google/gemma-4-31b-it:free`. |
+| `OPENROUTER_FALLBACK_MODEL` | Optional; default `openrouter/free`. |
+| `OPENROUTER_SITE_URL` | Optional; automatically falls back to Render's `RENDER_EXTERNAL_URL`. Set to your public URL if using a custom domain. |
+| `OPENROUTER_APP_NAME` | Optional; default `MVP Simulation`. |
+| `LOG_LEVEL` | Optional; default `info`. |
+
+Do not set `BASE_PATH`, `API_PROXY_TARGET`, `API_PORT`, or `FRONTEND_PORT` in
+Render. They are local development options. Frontend requests use same-origin
+`/api` URLs. Never put secrets in `VITE_*` variables: Vite exposes these to the
+browser. `.env` files are ignored by Git; `.env.example` contains placeholders.
+The production start script reads the process environment, not a local `.env`.
+
+### Database migrations
+
+The four application tables require initialization before registration works.
+The committed initial migration and Drizzle metadata live in `lib/db/migrations`.
+`pnpm run db:migrate` applies pending committed migrations transactionally,
+records them in Drizzle's migration journal, and safely does nothing on repeat
+runs. An advisory lock serializes concurrent migration processes; database
+errors fail deployment. No schema is pushed or force-applied during build.
+
+This initial migration targets a **fresh database**. Do not point it at a database
+previously initialized with `drizzle-kit push`: it will fail on existing tables
+rather than drop or silently rewrite them. To reuse existing data, first back up
+that database and plan a reviewed baseline/data migration. Never delete tables
+or use `push-force` to fix deployment.
+
+For future schema changes, edit `lib/db/src/schema/index.ts`, run:
+
+```bash
+pnpm run db:generate
+```
+
+Review the generated SQL and commit it with its metadata. Test it on a disposable
+PostgreSQL database before deployment. Prefer backward-compatible migrations
+because the old service can still run during pre-deploy. Restoring an old app
+build does not undo database migrations; take backups before schema changes.
+The existing `push` command remains available for local development only.
+
+### Verify locally before deployment
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run typecheck
+pnpm run build
+pnpm run test:deployment
+```
+
+The deployment smoke test starts the actual production bundle on an available
+port and checks the SPA, assets, API namespace, and registration validation. It
+does not need a database or API key. Test persistence separately with a disposable
+database (the tests write and clean up test records):
+
+```bash
+DATABASE_URL="postgresql://..." pnpm run db:migrate
+DATABASE_URL="postgresql://..." pnpm run db:migrate
+TEST_DATABASE_URL="postgresql://..." pnpm --filter @workspace/api-server test
+```

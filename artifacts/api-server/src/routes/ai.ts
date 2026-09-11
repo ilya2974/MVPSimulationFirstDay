@@ -27,7 +27,7 @@ async function requestCompletion(apiKey: string, model: string, messages: ChatMe
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:3000",
+      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000",
       "X-Title": process.env.OPENROUTER_APP_NAME || "MVP Simulation",
     },
     body: JSON.stringify({ model, messages, temperature: 0.25 }),
